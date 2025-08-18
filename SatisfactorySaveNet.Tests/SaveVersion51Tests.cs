@@ -3,6 +3,7 @@ using System.IO;
 using FluentAssertions;
 using NUnit.Framework;
 using SatisfactorySaveNet;
+using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 
 namespace SatisfactorySaveNet.Tests;
@@ -18,7 +19,7 @@ public class SaveVersion51Tests
         {
             HeaderVersion = 14,
             SaveVersion = 51,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             SaveName = "TestSave",
             MapName = "Map",
             MapOptions = "options",
@@ -105,7 +106,7 @@ public class SaveVersion51Tests
             {
                 HeaderVersion = 14,
                 SaveVersion = 51,
-                BuildVersion = 1,
+                BuildVersion = BuildVersions.Patch0613,
                 SaveName = "TestSave",
                 MapName = "Map",
                 MapOptions = string.Empty,

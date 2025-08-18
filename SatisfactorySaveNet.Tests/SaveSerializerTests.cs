@@ -20,7 +20,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
-                BuildVersion = 1,
+                BuildVersion = BuildVersions.Patch0613,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -48,7 +48,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = 1,
+                BuildVersion = BuildVersions.Patch0613,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
