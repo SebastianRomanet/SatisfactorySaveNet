@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using FluentAssertions;
 using SatisfactorySaveNet;
+using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 using SatisfactorySaveNet.Abstracts.Model.Properties;
 using SatisfactorySaveNet.Abstracts.Maths.Vector;
@@ -21,7 +22,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 5,
             SaveVersion = 10,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -88,7 +89,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 41,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -133,7 +134,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 41,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -187,7 +188,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 51,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
