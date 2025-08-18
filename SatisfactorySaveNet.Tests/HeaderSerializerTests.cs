@@ -14,7 +14,7 @@ public class HeaderSerializerTests
         using var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
         {
-            writer.Write((int)SaveHeaderVersion.LatestVersion + 1);
+            writer.Write((int)SaveHeaderVersion.VersionPlusOne);
             writer.Write((int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents);
             writer.Write(0);
         }
@@ -32,8 +32,8 @@ public class HeaderSerializerTests
         using var stream = new MemoryStream();
         using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
         {
-            writer.Write((int)SaveHeaderVersion.LatestVersion);
-            writer.Write((int)FSaveCustomVersion.LatestVersion + 1);
+            writer.Write((int)SaveHeaderVersion.VersionPlusOne - 1);
+            writer.Write((int)FSaveCustomVersion.VersionPlusOne);
             writer.Write(0);
         }
 

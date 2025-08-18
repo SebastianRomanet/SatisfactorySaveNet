@@ -3,12 +3,13 @@ using System.IO;
 using FluentAssertions;
 using NUnit.Framework;
 using SatisfactorySaveNet;
+using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 
 namespace SatisfactorySaveNet.Tests;
 
-[TestFixture(52, 1)]
-[TestFixture(53, 1)]
+[TestFixture(52, BuildVersions.Patch0700)]
+[TestFixture(53, BuildVersions.Patch0700)]
 [Parallelizable(ParallelScope.All)]
 public class SaveVersion52PlusTests
 {
