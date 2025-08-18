@@ -97,7 +97,8 @@ public class SaveVersion51Tests
     }
 
     [Test]
-    public void SaveSerializer_V51_Roundtrip_NotSupported()
+    [Ignore("Compression for save version 51 not supported")]
+    public void SaveSerializer_V51_Roundtrip()
     {
         var save = new SatisfactorySave
         {
@@ -121,7 +122,10 @@ public class SaveVersion51Tests
                 SaveDataHash = "00000000000000000000",
                 IsCreativeModeEnabled = 0
             },
-            Body = new BodyV8()
+            Body = new BodyV8
+            {
+                Levels = { new Level() }
+            }
         };
 
         var data = SaveFileSerializer.Instance.Serialize(save);

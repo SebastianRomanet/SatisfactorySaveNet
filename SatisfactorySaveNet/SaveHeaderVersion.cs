@@ -32,6 +32,13 @@ public enum SaveHeaderVersion
     // @2021-04-15 UE4.26 Engine Upgrade. FEditorObjectVersion Changes occurred
     UE426EngineUpdate,
 
+    // Placeholder values for newer header versions
+    Unknown10,
+    Unknown11,
+    Unknown12,
+    Unknown13,
+    Unknown14,
+
     // -----<new versions can be added above this line>-----
     VersionPlusOne,
     LatestVersion = VersionPlusOne - 1 // Last version to use
