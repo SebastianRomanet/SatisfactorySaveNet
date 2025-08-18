@@ -292,42 +292,84 @@ public class BodySerializer : IBodySerializer
 
         if (header.SaveVersion >= 51)
         {
-            // Save versions 51+ use a simplified format.  At the moment we only
-            // support emitting an empty persistent level with no grid, objects or
-            // collectables.  This is sufficient for creating minimal new saves
-            // but anything more complex is not yet implemented.
+            // Save versions 51+ still include the grid section but introduce
+            // additional data for streaming levels.  We currently only support
+            // a single persistent level and omit streaming level support.
 
             if (body.Grid is not null)
                 throw new NotSupportedException("Grid serialization not implemented");
 
-            if (body.ObjectReferences is { Count: > 0 })
-                throw new NotSupportedException("Object reference serialization not implemented");
-
             if (body.Levels.Count != 1)
-                throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
+                throw new NotSupportedException("BodyV8 serialization only supports a single persistent level");
 
-            var emptyLevel = body.Levels.First();
-            if (emptyLevel.Objects.Count != 0 || emptyLevel.Collectables.Count != 0 || (emptyLevel.SecondCollectables?.Count ?? 0) != 0)
-                throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
+            var level = body.Levels.First();
+
+            // minimal grid
+            writer.Write(1); // partition count
+            _stringSerializer.Serialize(writer, string.Empty);
+            writer.Write(0u);
+            writer.Write(0u);
+            writer.Write(0);
+            _stringSerializer.Serialize(writer, string.Empty);
+            writer.Write(0u);
 
             // no non-persistent levels
             writer.Write(0);
 
-            // binary length of persistent level block consisting of
-            // nrObjectHeaders + nrCollectables + binarySizeObjects + nrObjects + nrSecondCollectables
-            const long binaryLength = 24;
-            writer.Write(binaryLength);
+            using var levelStream = new MemoryStream();
+            using (var levelWriter = new BinaryWriter(levelStream, System.Text.Encoding.UTF8, true))
+            {
+                // nrObjectHeaders
+                levelWriter.Write(level.Objects.Count);
+                foreach (var obj in level.Objects)
+                {
+                    _objectHeaderSerializer.Serialize(levelWriter, obj, header.SaveVersion);
+                }
 
-            // nrObjectHeaders
-            writer.Write(0);
-            // nrCollectables
-            writer.Write(0);
-            // binarySizeObjects (only nrObjects int)
-            writer.Write(4L);
-            // nrObjects
-            writer.Write(0);
-            // nrSecondCollectables
-            writer.Write(0);
+                // nrCollectables
+                levelWriter.Write(level.Collectables.Count);
+                foreach (var collectable in level.Collectables)
+                {
+                    _objectReferenceSerializer.Serialize(levelWriter, collectable);
+                }
+
+                using var objectStream = new MemoryStream();
+                using (var objectWriter = new BinaryWriter(objectStream, System.Text.Encoding.UTF8, true))
+                {
+                    objectWriter.Write(level.Objects.Count);
+                    foreach (var obj in level.Objects)
+                    {
+                        _objectSerializer.Serialize(objectWriter, header, obj);
+                    }
+                }
+
+                levelWriter.Write((long)objectStream.Length);
+                levelWriter.Write(objectStream.ToArray());
+
+                // SaveVersion 51+ adds an unknown 32-bit field between objects and
+                // second collectables for streaming levels.  Streaming levels are
+                // not supported yet, so nothing is written here.
+
+                var secondCollectables = level.SecondCollectables ?? Enumerable.Empty<ObjectReference>();
+                levelWriter.Write(secondCollectables.Count());
+                foreach (var collectable in secondCollectables)
+                {
+                    _objectReferenceSerializer.Serialize(levelWriter, collectable);
+                }
+            }
+
+            writer.Write(levelStream.Length);
+            writer.Write(levelStream.ToArray());
+
+            if (body.ObjectReferences is { Count: > 0 })
+            {
+                writer.Write(body.ObjectReferences.Count);
+                foreach (var objRef in body.ObjectReferences)
+                {
+                    _objectReferenceSerializer.Serialize(writer, objRef);
+                }
+            }
+
             return;
         }
 
@@ -341,7 +383,7 @@ public class BodySerializer : IBodySerializer
         if (body.Levels.Count != 1)
             throw new NotSupportedException("BodyV8 serialization only supports a single persistent level");
 
-        var level = body.Levels.First();
+        var level41 = body.Levels.First();
 
         // minimal grid
         writer.Write(1); // partition count
@@ -355,46 +397,46 @@ public class BodySerializer : IBodySerializer
         // no non-persistent levels
         writer.Write(0);
 
-        using var levelStream = new MemoryStream();
-        using (var levelWriter = new BinaryWriter(levelStream, System.Text.Encoding.UTF8, true))
+        using var levelStream41 = new MemoryStream();
+        using (var levelWriter41 = new BinaryWriter(levelStream41, System.Text.Encoding.UTF8, true))
         {
             // nrObjectHeaders
-            levelWriter.Write(level.Objects.Count);
-            foreach (var obj in level.Objects)
+            levelWriter41.Write(level41.Objects.Count);
+            foreach (var obj in level41.Objects)
             {
-                _objectHeaderSerializer.Serialize(levelWriter, obj, header.SaveVersion);
+                _objectHeaderSerializer.Serialize(levelWriter41, obj, header.SaveVersion);
             }
 
             // nrCollectables
-            levelWriter.Write(level.Collectables.Count);
-            foreach (var collectable in level.Collectables)
+            levelWriter41.Write(level41.Collectables.Count);
+            foreach (var collectable in level41.Collectables)
             {
-                _objectReferenceSerializer.Serialize(levelWriter, collectable);
+                _objectReferenceSerializer.Serialize(levelWriter41, collectable);
             }
 
-            using var objectStream = new MemoryStream();
-            using (var objectWriter = new BinaryWriter(objectStream, System.Text.Encoding.UTF8, true))
+            using var objectStream41 = new MemoryStream();
+            using (var objectWriter41 = new BinaryWriter(objectStream41, System.Text.Encoding.UTF8, true))
             {
-                objectWriter.Write(level.Objects.Count);
-                foreach (var obj in level.Objects)
+                objectWriter41.Write(level41.Objects.Count);
+                foreach (var obj in level41.Objects)
                 {
-                    _objectSerializer.Serialize(objectWriter, header, obj);
+                    _objectSerializer.Serialize(objectWriter41, header, obj);
                 }
             }
 
-            levelWriter.Write((long)objectStream.Length);
-            levelWriter.Write(objectStream.ToArray());
+            levelWriter41.Write((long)objectStream41.Length);
+            levelWriter41.Write(objectStream41.ToArray());
 
-            var secondCollectables = level.SecondCollectables ?? Enumerable.Empty<ObjectReference>();
-            levelWriter.Write(secondCollectables.Count());
-            foreach (var collectable in secondCollectables)
+            var secondCollectables41 = level41.SecondCollectables ?? Enumerable.Empty<ObjectReference>();
+            levelWriter41.Write(secondCollectables41.Count());
+            foreach (var collectable in secondCollectables41)
             {
-                _objectReferenceSerializer.Serialize(levelWriter, collectable);
+                _objectReferenceSerializer.Serialize(levelWriter41, collectable);
             }
         }
 
-        writer.Write(levelStream.Length);
-        writer.Write(levelStream.ToArray());
+        writer.Write(levelStream41.Length);
+        writer.Write(levelStream41.ToArray());
 
         if (body.ObjectReferences is { Count: > 0 })
         {
