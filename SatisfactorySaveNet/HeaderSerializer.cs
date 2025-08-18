@@ -24,6 +24,12 @@ public class HeaderSerializer : IHeaderSerializer
         var saveVersion = reader.ReadInt32();
         var buildVersion = reader.ReadInt32();
 
+        if (headerVersion > (int)SaveHeaderVersion.LatestVersion)
+            throw new NotSupportedException($"Unsupported header version {headerVersion}. Supported up to {(int)SaveHeaderVersion.LatestVersion}.");
+
+        if (saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || saveVersion > (int)FSaveCustomVersion.LatestVersion)
+            throw new NotSupportedException($"Unsupported save version {saveVersion}. Supported range {(int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents}-{(int)FSaveCustomVersion.LatestVersion}.");
+
         string? saveName = null;
 
         if (headerVersion >= 14)
