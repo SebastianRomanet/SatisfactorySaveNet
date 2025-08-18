@@ -3,23 +3,32 @@ using System.IO;
 using FluentAssertions;
 using NUnit.Framework;
 using SatisfactorySaveNet;
-using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 
 namespace SatisfactorySaveNet.Tests;
 
-[TestFixture]
+[TestFixture(52, 1)]
+[TestFixture(53, 1)]
 [Parallelizable(ParallelScope.All)]
-public class SaveVersion51Tests
+public class SaveVersion52PlusTests
 {
+    private readonly int _saveVersion;
+    private readonly int _buildVersion;
+
+    public SaveVersion52PlusTests(int saveVersion, int buildVersion)
+    {
+        _saveVersion = saveVersion;
+        _buildVersion = buildVersion;
+    }
+
     [Test]
-    public void HeaderSerializer_V14_Roundtrip_IncludesNewFields()
+    public void HeaderSerializer_Roundtrip_IncludesNewFields()
     {
         var header = new Header
         {
             HeaderVersion = 14,
-            SaveVersion = 51,
-            BuildVersion = BuildVersions.Patch0613,
+            SaveVersion = _saveVersion,
+            BuildVersion = _buildVersion,
             SaveName = "TestSave",
             MapName = "Map",
             MapOptions = "options",
@@ -50,22 +59,15 @@ public class SaveVersion51Tests
     }
 
     [Test]
-    [Ignore("Non-persistent level deserialization requires updated fixtures")]
-    public void BodyDeserializer_V51_WithNonPersistentLevel()
-    {
-        Assert.Pass();
-    }
-
-    [Test]
-    public void BodySerializer_V51_Roundtrip()
+    public void BodySerializer_Roundtrip_PreservesSaveVersion()
     {
         var save = new SatisfactorySave
         {
             Header = new Header
             {
                 HeaderVersion = 14,
-                SaveVersion = 51,
-                BuildVersion = BuildVersions.Patch0613,
+                SaveVersion = _saveVersion,
+                BuildVersion = _buildVersion,
                 SaveName = "TestSave",
                 MapName = "Map",
                 MapOptions = string.Empty,

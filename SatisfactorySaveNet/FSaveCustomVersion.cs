@@ -91,6 +91,6 @@ public enum FSaveCustomVersion
     TrainBlueprintClassAdded,
 
     // -----<new versions can be added above this line>-------------------------------------------------
-    VersionPlusOne = 52,
+    VersionPlusOne = 60,
     LatestVersion = VersionPlusOne - 1
 }

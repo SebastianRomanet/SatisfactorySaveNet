@@ -32,12 +32,18 @@ public enum SaveHeaderVersion
     // @2021-04-15 UE4.26 Engine Upgrade. FEditorObjectVersion Changes occurred
     UE426EngineUpdate,
 
-    // Placeholder values for newer header versions
-    Unknown10,
+    // @2021-05-?? Added unique save identifier
+    AddedSaveIdentifier,
+
+    // @2021-?? Placeholder for intermediate versions
     Unknown11,
     Unknown12,
-    Unknown13,
-    Unknown14,
+
+    // @2023-?? Added partitioned world and save hash fields
+    AddedPartitionedWorld,
+
+    // @2024-?? Save name moved to header
+    SaveNameInHeader,
 
     // -----<new versions can be added above this line>-----
     VersionPlusOne,
