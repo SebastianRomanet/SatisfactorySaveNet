@@ -6,7 +6,7 @@ You can integrate it using [nuget.org](https://www.nuget.org/packages/Satisfacto
 Further, (external and promising looking) documentation of the save game format is available [here](https://github.com/moritz-h/satisfactory-3d-map/blob/master/docs/SATISFACTORY_SAVE.md). **Link fixed now sorry**
 
 ## Version compatibility
-The library supports save headers up to `SaveHeaderVersion.LatestVersion` and save versions from `FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents` through `FSaveCustomVersion.LatestVersion`. Newer or older saves outside of this range will result in a `NotSupportedException` during deserialization.
+The library supports save headers up to `SaveHeaderVersion.SaveNameInHeader` and save versions from `FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents` through `FSaveCustomVersion.TrainBlueprintClassAdded`. Saves outside of this range throw a `NotSupportedException` during deserialization.
 
 ## How to use
 ```CSharp
