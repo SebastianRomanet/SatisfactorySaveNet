@@ -247,4 +247,64 @@ public class BodySerializerTests
         rtLevel.SecondCollectables.First().PathName.Should().Be("/Game/Collectable2");
         roundTripped.ObjectReferences!.First().PathName.Should().Be("/Game/GlobalRef");
     }
+
+    [Test]
+    public void SerializeV8_SaveVersion51_WithGridAndStreamingLevels_RoundTrip()
+    {
+        var header = new Header
+        {
+            HeaderVersion = 7,
+            SaveVersion = 51,
+            BuildVersion = 1,
+            MapName = "Map",
+            MapOptions = string.Empty,
+            SessionName = "Session",
+            PlayedSeconds = 0,
+            SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            SessionVisibility = 0
+        };
+
+        var grid = new Grid
+        {
+            Unknown1 = "g1",
+            Unknown2 = 1,
+            HeadHex1 = 1,
+            Unknown4 = "g4",
+            HeadHex2 = 2,
+            Data = new List<GridData>
+            {
+                new GridData
+                {
+                    Unknown1 = "gd1",
+                    GridHex = 3,
+                    Count = 1,
+                    Levels = new List<GridLevel>
+                    {
+                        new GridLevel { Unknown1 = "gl1", Unknown2 = 4 }
+                    }
+                }
+            }
+        };
+
+        var body = new BodyV8 { Grid = grid };
+        body.Levels.Add(new Level { Name = "Streaming" });
+        body.Levels.Add(new Level());
+
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
+        {
+            BodySerializer.Instance.Serialize(writer, header, body);
+        }
+
+        stream.Position = 0;
+        using var reader = new BinaryReader(stream);
+        var roundTripped = BodySerializer.Instance.Deserialize(reader, header) as BodyV8;
+
+        roundTripped.Should().NotBeNull();
+        roundTripped!.Grid.Should().NotBeNull();
+        roundTripped.Grid!.Data.Should().HaveCount(1);
+        roundTripped.Grid.Unknown1.Should().Be("g1");
+        roundTripped.Levels.Should().HaveCount(2);
+        roundTripped.Levels.First().Name.Should().Be("Streaming");
+    }
 }
