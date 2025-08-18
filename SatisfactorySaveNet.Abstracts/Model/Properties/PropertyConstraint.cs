@@ -15,5 +15,9 @@ public enum ArrayPropertyConstraint
     String,
     Struct,
     Text,
-    UInt64
+    UInt64,
+    Name,
+    UInt32,
+    Int8,
+    FINNetwork
 }

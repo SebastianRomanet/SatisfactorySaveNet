@@ -107,6 +107,30 @@ public class PropertySerializer : IPropertySerializer
         return property;
     }
 
+    /// <summary>
+    /// Deserializes array property values.
+    /// Supported types:
+    /// <list type="bullet">
+    /// <item><description>ByteProperty</description></item>
+    /// <item><description>BoolProperty</description></item>
+    /// <item><description>IntProperty</description></item>
+    /// <item><description>Int64Property</description></item>
+    /// <item><description>UInt64Property</description></item>
+    /// <item><description>DoubleProperty</description></item>
+    /// <item><description>FloatProperty</description></item>
+    /// <item><description>EnumProperty</description></item>
+    /// <item><description>StrProperty</description></item>
+    /// <item><description>TextProperty</description></item>
+    /// <item><description>SoftObjectProperty</description></item>
+    /// <item><description>ObjectProperty</description></item>
+    /// <item><description>InterfaceProperty</description></item>
+    /// <item><description>StructProperty</description></item>
+    /// <item><description>NameProperty</description></item>
+    /// <item><description>UInt32Property</description></item>
+    /// <item><description>Int8Property</description></item>
+    /// <item><description>FINNetworkProperty</description></item>
+    /// </list>
+    /// </summary>
     private ArrayPropertyBase DeserializeArrayProperty(BinaryReader reader, Header header, string type, int count)
     {
         return type switch
@@ -125,7 +149,10 @@ public class PropertySerializer : IPropertySerializer
             nameof(ObjectProperty) => DeserializeArrayObjectProperty(reader, count),
             nameof(InterfaceProperty) => DeserializeArrayInterfaceProperty(reader, count),
             nameof(StructProperty) => DeserializeArrayStructProperty(reader, header, count),
-            //ToDo: All implemented?
+            nameof(NameProperty) => DeserializeArrayNameProperty(reader, count),
+            nameof(UInt32Property) => DeserializeArrayUInt32Property(reader, count),
+            nameof(Int8Property) => DeserializeArrayInt8Property(reader, count),
+            nameof(FINNetworkProperty) => DeserializeArrayFINNetworkProperty(reader, count),
 
             _ => throw new ArgumentOutOfRangeException(nameof(type), type, null)
         };
@@ -337,6 +364,66 @@ public class PropertySerializer : IPropertySerializer
         }
 
         return new ArraySoftObjectProperty
+        {
+            Values = values
+        };
+    }
+
+    private ArrayNameProperty DeserializeArrayNameProperty(BinaryReader reader, int count)
+    {
+        var values = new string[count];
+
+        for (var x = 0; x < count; x++)
+        {
+            values[x] = _stringSerializer.Deserialize(reader);
+        }
+
+        return new ArrayNameProperty
+        {
+            Values = values
+        };
+    }
+
+    private static ArrayUInt32Property DeserializeArrayUInt32Property(BinaryReader reader, int count)
+    {
+        var values = new uint[count];
+
+        for (var x = 0; x < count; x++)
+        {
+            values[x] = reader.ReadUInt32();
+        }
+
+        return new ArrayUInt32Property
+        {
+            Values = values
+        };
+    }
+
+    private static ArrayInt8Property DeserializeArrayInt8Property(BinaryReader reader, int count)
+    {
+        var values = new sbyte[count];
+
+        for (var x = 0; x < count; x++)
+        {
+            values[x] = reader.ReadSByte();
+        }
+
+        return new ArrayInt8Property
+        {
+            Values = values
+        };
+    }
+
+    private ArrayFINNetworkProperty DeserializeArrayFINNetworkProperty(BinaryReader reader, int count)
+    {
+        var values = new FINNetworkProperty[count];
+
+        for (var x = 0; x < count; x++)
+        {
+            values[x] = DeserializeFINNetworkProperty(reader);
+        }
+
+        return new ArrayFINNetworkProperty
         {
             Values = values
         };
