@@ -447,37 +447,25 @@ public class ExtraDataSerializer : IExtraDataSerializer
                 var binarySizeProperties = reader.ReadInt32();
                 var expectedPosition = reader.BaseStream.Position + binarySizeProperties;
 
-                if (string.Equals(itemState?.PathName, "/Script/FicsItNetworksComputer.FINItemStateFileSystem"))
+                var (finItemStateFileSystem, properties) = InventoryItemHelper.ReadStatefulItem(
+                    reader,
+                    header,
+                    _propertySerializer,
+                    _hexSerializer,
+                    itemState?.PathName,
+                    expectedPosition);
+
+                position = _vectorSerializer.DeserializeVec4BAs4I(reader);
+
+                items[x] = new StatefulItem
                 {
-                    var length = reader.ReadInt32();
-                    var fINItemStateFileSystem = _hexSerializer.Deserialize(reader, length);
-
-                    position = _vectorSerializer.DeserializeVec4BAs4I(reader);
-
-                    items[x] = new StatefulItem
-                    {
-                        Name = name,
-                        State = state,
-                        ItemState = itemState,
-                        Position = position,
-                        FINItemStateFileSystem = fINItemStateFileSystem,
-                    };
-                }
-                else
-                {
-                    var properties = _propertySerializer.DeserializeProperties(reader, header, expectedPosition: expectedPosition).ToArray();
-
-                    position = _vectorSerializer.DeserializeVec4BAs4I(reader);
-
-                    items[x] = new StatefulItem
-                    {
-                        Name = name,
-                        State = state,
-                        ItemState = itemState,
-                        Position = position,
-                        Properties = properties
-                    };
-                }
+                    Name = name,
+                    State = state,
+                    ItemState = itemState,
+                    Position = position,
+                    FINItemStateFileSystem = finItemStateFileSystem,
+                    Properties = properties
+                };
 
                 break;
             }
@@ -528,39 +516,25 @@ public class ExtraDataSerializer : IExtraDataSerializer
                 {
                     itemState = _objectReferenceSerializer.Deserialize(reader);
 
-                    if (string.Equals(itemState?.PathName, "/Script/FicsItNetworksComputer.FINItemStateFileSystem"))
+                    var (finItemStateFileSystem, properties) = InventoryItemHelper.ReadStatefulItem(
+                        reader,
+                        header,
+                        _propertySerializer,
+                        _hexSerializer,
+                        itemState?.PathName);
+
+                    position = _vectorSerializer.DeserializeVec4BAs4I(reader);
+
+                    items[x] = new StatefulItem
                     {
-                        var length = reader.ReadInt32();
-                        var fINItemStateFileSystem = _hexSerializer.Deserialize(reader, length);
-
-                        position = _vectorSerializer.DeserializeVec4BAs4I(reader);
-
-                        items[x] = new StatefulItem
-                        {
-                            Name = name,
-                            ItemState = itemState,
-                            Position = position,
-                            State = state,
-                            FINItemStateFileSystem = fINItemStateFileSystem
-                        };
-                        break;
-                    }
-                    else
-                    {
-                        var properties = _propertySerializer.DeserializeProperties(reader, header).ToArray();
-
-                        position = _vectorSerializer.DeserializeVec4BAs4I(reader);
-
-                        items[x] = new StatefulItem
-                        {
-                            Name = name,
-                            ItemState = itemState,
-                            Position = position,
-                            State = state,
-                            Properties = properties
-                        };
-                        break;
-                    }
+                        Name = name,
+                        ItemState = itemState,
+                        Position = position,
+                        State = state,
+                        FINItemStateFileSystem = finItemStateFileSystem,
+                        Properties = properties
+                    };
+                    break;
                 }
             }
             else
