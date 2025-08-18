@@ -150,13 +150,83 @@ public class SaveFileSerializer : ISaveFileSerializer
         using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true);
 
         _headerSerializer.Serialize(writer, save.Header);
-
-        if (save.Header.SaveVersion >= 21)
-            throw new NotSupportedException("Serialization for compressed save versions is not implemented");
-
         if (save.Body == null)
             throw new ArgumentNullException(nameof(save.Body));
 
-        _bodySerializer.Serialize(writer, save.Header, save.Body);
+        if (save.Header.SaveVersion < 21)
+        {
+            _bodySerializer.Serialize(writer, save.Header, save.Body);
+            return;
+        }
+
+        using var bodyStream = Manager.GetStream();
+        using (var bodyWriter = new BinaryWriter(bodyStream, System.Text.Encoding.UTF8, true))
+        {
+            _bodySerializer.Serialize(bodyWriter, save.Header, save.Body);
+            bodyWriter.Flush();
+        }
+        bodyStream.Position = 0;
+
+        using var buffer = Manager.GetStream();
+        if (save.Header.SaveVersion >= 41)
+            buffer.Write(BitConverter.GetBytes(bodyStream.Length));
+        else
+            buffer.Write(BitConverter.GetBytes((int)bodyStream.Length));
+
+        bodyStream.CopyTo(buffer);
+        buffer.Position = 0;
+
+        var chunkBuffer = new byte[ChunkInfo.ChunkSize];
+
+        while (buffer.Position < buffer.Length)
+        {
+            var read = buffer.Read(chunkBuffer, 0, chunkBuffer.Length);
+
+            using var compressed = Manager.GetStream();
+            using (var zStream = new ZLibStream(compressed, CompressionMode.Compress, true))
+            {
+                zStream.Write(chunkBuffer, 0, read);
+            }
+
+            var compressedSize = (int)compressed.Length;
+            compressed.Position = 0;
+
+            // chunk header
+            writer.Write(ChunkInfo.MagicValue);
+            writer.Write(0);
+            writer.Write(ChunkInfo.ChunkSize);
+            writer.Write(0);
+
+            if (save.Header.SaveVersion >= 41)
+                writer.Write((byte)0);
+
+            // summary header
+            if (save.Header.SaveVersion >= 41)
+            {
+                writer.Write((long)compressedSize);
+                writer.Write(0L);
+                writer.Write((long)read);
+                writer.Write(0L);
+
+                writer.Write((long)compressedSize);
+                writer.Write(0L);
+                writer.Write((long)read);
+                writer.Write(0L);
+            }
+            else
+            {
+                writer.Write(compressedSize);
+                writer.Write(0);
+                writer.Write(read);
+                writer.Write(0);
+
+                writer.Write(compressedSize);
+                writer.Write(0);
+                writer.Write(read);
+                writer.Write(0);
+            }
+
+            compressed.CopyTo(stream);
+        }
     }
 }
