@@ -262,17 +262,107 @@ public class BodySerializer : IBodySerializer
 
     private void SerializePreV8(BinaryWriter writer, BodyPreV8 body)
     {
-        // Only support empty bodies for now
         writer.Write(body.Objects.Count);
-        if (body.Objects.Count != 0)
-            throw new NotSupportedException("Object serialization not implemented");
+        foreach (var obj in body.Objects)
+        {
+            SerializeObjectHeader(writer, obj);
+        }
 
         writer.Write(body.Objects.Count);
-        if (body.Objects.Count != 0)
-            throw new NotSupportedException("Object serialization not implemented");
+        foreach (var obj in body.Objects)
+        {
+            SerializeObject(writer, obj);
+        }
 
         writer.Write(body.Collectables.Count);
-        if (body.Collectables.Count != 0)
-            throw new NotSupportedException("Collectable serialization not implemented");
+        foreach (var collectable in body.Collectables)
+        {
+            SerializeObjectReference(writer, collectable);
+        }
+    }
+
+    private void SerializeObjectHeader(BinaryWriter writer, ComponentObject obj)
+    {
+        switch (obj)
+        {
+            case ActorObject actor:
+                writer.Write(ActorObject.TypeID);
+                _stringSerializer.Serialize(writer, actor.TypePath);
+                SerializeObjectReference(writer, actor.ObjectReference);
+                if (actor.Flags != null)
+                    throw new NotSupportedException("Actor flags serialization not implemented");
+                writer.Write(actor.NeedTransform);
+                writer.Write(actor.Rotation.X);
+                writer.Write(actor.Rotation.Y);
+                writer.Write(actor.Rotation.Z);
+                writer.Write(actor.Rotation.W);
+                writer.Write(actor.Position.X);
+                writer.Write(actor.Position.Y);
+                writer.Write(actor.Position.Z);
+                writer.Write(actor.Scale.X);
+                writer.Write(actor.Scale.Y);
+                writer.Write(actor.Scale.Z);
+                writer.Write(actor.PlacedInLevel);
+                break;
+            case ComponentObject component:
+                writer.Write(ComponentObject.TypeID);
+                _stringSerializer.Serialize(writer, component.TypePath);
+                SerializeObjectReference(writer, component.ObjectReference);
+                if (component.Flags != null)
+                    throw new NotSupportedException("Component flags serialization not implemented");
+                _stringSerializer.Serialize(writer, component.ParentActorName);
+                break;
+            default:
+                throw new NotSupportedException($"Object header serialization not implemented for type {obj.GetType().Name}");
+        }
+    }
+
+    private void SerializeObject(BinaryWriter writer, ComponentObject obj)
+    {
+        switch (obj)
+        {
+            case ActorObject actor:
+                if (actor.Properties.Count != 0)
+                    throw new NotSupportedException("Actor property serialization not implemented");
+                if (actor.ExtraData != null)
+                    throw new NotSupportedException("Actor extra data serialization not implemented");
+
+                using (var ms = new MemoryStream())
+                {
+                    using var bw = new BinaryWriter(ms);
+                    _stringSerializer.Serialize(bw, actor.ParentObjectRoot);
+                    _stringSerializer.Serialize(bw, actor.ParentObjectName);
+                    bw.Write(actor.Components.Count);
+                    foreach (var componentRef in actor.Components)
+                        SerializeObjectReference(bw, componentRef);
+                    bw.Flush();
+                    writer.Write((int)ms.Length);
+                    writer.Write(ms.ToArray());
+                }
+                break;
+            case ComponentObject component:
+                if (component.Properties.Count != 0)
+                    throw new NotSupportedException("Component property serialization not implemented");
+                if (component.ExtraData != null)
+                    throw new NotSupportedException("Component extra data serialization not implemented");
+
+                using (var ms = new MemoryStream())
+                {
+                    using var bw = new BinaryWriter(ms);
+                    _stringSerializer.Serialize(bw, "None");
+                    bw.Flush();
+                    writer.Write((int)ms.Length);
+                    writer.Write(ms.ToArray());
+                }
+                break;
+            default:
+                throw new NotSupportedException($"Object serialization not implemented for type {obj.GetType().Name}");
+        }
+    }
+
+    private void SerializeObjectReference(BinaryWriter writer, ObjectReference reference)
+    {
+        _stringSerializer.Serialize(writer, reference.LevelName);
+        _stringSerializer.Serialize(writer, reference.PathName);
     }
 }
