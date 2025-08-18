@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using FluentAssertions;
@@ -77,5 +78,50 @@ public class BodySerializerTests
         var obj = body.Objects.First();
         obj.Properties.Should().HaveCount(1);
         obj.Properties.First().Should().BeOfType<IntProperty>().Which.Value.Should().Be(123);
+    }
+
+    [Test]
+    public void SerializeV8_WithCollectablesAndReferences_RoundTrip()
+    {
+        var header = new Header
+        {
+            HeaderVersion = 7,
+            SaveVersion = 41,
+            BuildVersion = 1,
+            MapName = "Map",
+            MapOptions = string.Empty,
+            SessionName = "Session",
+            PlayedSeconds = 0,
+            SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            SessionVisibility = 0
+        };
+
+        var body = new BodyV8();
+        var level = new Level();
+        level.Collectables.Add(new ObjectReference { LevelName = "Level", PathName = "/Game/Collectable1" });
+        level.SecondCollectables!.Add(new ObjectReference { LevelName = "Level", PathName = "/Game/Collectable2" });
+        body.Levels.Add(level);
+        body.ObjectReferences = new List<ObjectReference>
+        {
+            new ObjectReference { LevelName = "Level", PathName = "/Game/GlobalRef" }
+        };
+
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
+        {
+            BodySerializer.Instance.Serialize(writer, header, body);
+        }
+
+        stream.Position = 0;
+        using var reader = new BinaryReader(stream);
+        var roundTripped = BodySerializer.Instance.Deserialize(reader, header) as BodyV8;
+
+        roundTripped.Should().NotBeNull();
+        roundTripped!.Levels.Single().Collectables.Should().HaveCount(1);
+        roundTripped.Levels.Single().SecondCollectables.Should().HaveCount(1);
+        roundTripped.ObjectReferences.Should().HaveCount(1);
+        roundTripped.Levels.Single().Collectables.First().PathName.Should().Be("/Game/Collectable1");
+        roundTripped.Levels.Single().SecondCollectables.First().PathName.Should().Be("/Game/Collectable2");
+        roundTripped.ObjectReferences!.First().PathName.Should().Be("/Game/GlobalRef");
     }
 }

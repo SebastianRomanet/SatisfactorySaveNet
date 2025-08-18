@@ -4,6 +4,7 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 namespace SatisfactorySaveNet;
 
@@ -255,6 +256,9 @@ public class BodySerializer : IBodySerializer
             case BodyPreV8 preV8:
                 SerializePreV8(writer, preV8);
                 break;
+            case BodyV8 v8:
+                SerializeV8(writer, header, v8);
+                break;
             default:
                 throw new NotSupportedException("Body serialization for this version is not implemented");
         }
@@ -262,7 +266,7 @@ public class BodySerializer : IBodySerializer
 
     private void SerializePreV8(BinaryWriter writer, BodyPreV8 body)
     {
-        // Only support empty bodies for now
+        // Only support bodies without objects for now
         writer.Write(body.Objects.Count);
         if (body.Objects.Count != 0)
             throw new NotSupportedException("Object serialization not implemented");
@@ -272,7 +276,77 @@ public class BodySerializer : IBodySerializer
             throw new NotSupportedException("Object serialization not implemented");
 
         writer.Write(body.Collectables.Count);
-        if (body.Collectables.Count != 0)
-            throw new NotSupportedException("Collectable serialization not implemented");
+        foreach (var collectable in body.Collectables)
+        {
+            _objectReferenceSerializer.Serialize(writer, collectable);
+        }
+    }
+
+    private void SerializeV8(BinaryWriter writer, Header header, BodyV8 body)
+    {
+        if (header.SaveVersion < 41)
+            throw new NotSupportedException("BodyV8 serialization for save versions below 41 is not implemented");
+
+        // Only support a single persistent level with no objects
+        if (body.Grid is not null)
+            throw new NotSupportedException("Grid serialization not implemented");
+
+        if (body.Levels.Count != 1)
+            throw new NotSupportedException("BodyV8 serialization only supports a single persistent level");
+
+        var level = body.Levels.First();
+        if (level.Objects.Count != 0)
+            throw new NotSupportedException("Object serialization not implemented");
+
+        // minimal grid
+        writer.Write(1); // partition count
+        _stringSerializer.Serialize(writer, string.Empty);
+        writer.Write(0u);
+        writer.Write(0u);
+        writer.Write(0);
+        _stringSerializer.Serialize(writer, string.Empty);
+        writer.Write(0u);
+
+        // no non-persistent levels
+        writer.Write(0);
+
+        using var levelStream = new MemoryStream();
+        using (var levelWriter = new BinaryWriter(levelStream, System.Text.Encoding.UTF8, true))
+        {
+            // nrObjectHeaders
+            levelWriter.Write(0);
+
+            // nrCollectables
+            levelWriter.Write(level.Collectables.Count);
+            foreach (var collectable in level.Collectables)
+            {
+                _objectReferenceSerializer.Serialize(levelWriter, collectable);
+            }
+
+            // binarySizeObjects (only nrObjects int)
+            levelWriter.Write(4L);
+
+            // nrObjects
+            levelWriter.Write(0);
+
+            var secondCollectables = level.SecondCollectables ?? Enumerable.Empty<ObjectReference>();
+            levelWriter.Write(secondCollectables.Count());
+            foreach (var collectable in secondCollectables)
+            {
+                _objectReferenceSerializer.Serialize(levelWriter, collectable);
+            }
+        }
+
+        writer.Write(levelStream.Length);
+        writer.Write(levelStream.ToArray());
+
+        if (body.ObjectReferences is { Count: > 0 })
+        {
+            writer.Write(body.ObjectReferences.Count);
+            foreach (var objRef in body.ObjectReferences)
+            {
+                _objectReferenceSerializer.Serialize(writer, objRef);
+            }
+        }
     }
 }
