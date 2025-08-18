@@ -1,6 +1,7 @@
 using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Exceptions;
 using SatisfactorySaveNet.Abstracts.Model;
+using System;
 using System.Collections.Generic;
 using System.IO;
 
@@ -245,5 +246,33 @@ public class BodySerializer : IBodySerializer
             };
 #pragma warning restore CS0618 // Type or member is obsolete
         }
+    }
+
+    public void Serialize(BinaryWriter writer, Header header, BodyBase body)
+    {
+        switch (body)
+        {
+            case BodyPreV8 preV8:
+                SerializePreV8(writer, preV8);
+                break;
+            default:
+                throw new NotSupportedException("Body serialization for this version is not implemented");
+        }
+    }
+
+    private void SerializePreV8(BinaryWriter writer, BodyPreV8 body)
+    {
+        // Only support empty bodies for now
+        writer.Write(body.Objects.Count);
+        if (body.Objects.Count != 0)
+            throw new NotSupportedException("Object serialization not implemented");
+
+        writer.Write(body.Objects.Count);
+        if (body.Objects.Count != 0)
+            throw new NotSupportedException("Object serialization not implemented");
+
+        writer.Write(body.Collectables.Count);
+        if (body.Collectables.Count != 0)
+            throw new NotSupportedException("Collectable serialization not implemented");
     }
 }

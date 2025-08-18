@@ -2,6 +2,7 @@ using Microsoft.IO;
 using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Exceptions;
 using SatisfactorySaveNet.Abstracts.Model;
+using System;
 using System.IO;
 using System.IO.Compression;
 
@@ -129,5 +130,33 @@ public class SaveFileSerializer : ISaveFileSerializer
             Header = header,
             Body = body
         }; //ToDo: Versioned models && include discarded reads
+    }
+
+    public void Serialize(SatisfactorySave save, string path)
+    {
+        using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
+        Serialize(save, stream);
+    }
+
+    public byte[] Serialize(SatisfactorySave save)
+    {
+        using var stream = Manager.GetStream();
+        Serialize(save, stream);
+        return stream.ToArray();
+    }
+
+    public void Serialize(SatisfactorySave save, Stream stream)
+    {
+        using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true);
+
+        _headerSerializer.Serialize(writer, save.Header);
+
+        if (save.Header.SaveVersion >= 21)
+            throw new NotSupportedException("Serialization for compressed save versions is not implemented");
+
+        if (save.Body == null)
+            throw new ArgumentNullException(nameof(save.Body));
+
+        _bodySerializer.Serialize(writer, save.Header, save.Body);
     }
 }
