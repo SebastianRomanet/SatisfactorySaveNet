@@ -525,15 +525,13 @@ public class TypedDataSerializer : ITypedDataSerializer
 
     private RailroadTrackPosition DeserializeRailroadTrackPosition(BinaryReader reader)
     {
-        var levelName = _stringSerializer.Deserialize(reader); //ToDo: ObjectReference
-        var pathName = _stringSerializer.Deserialize(reader);
+        var track = _objectReferenceSerializer.Deserialize(reader);
         var offset = reader.ReadSingle();
         var forward = reader.ReadSingle();
 
         return new RailroadTrackPosition
         {
-            LevelName = levelName,
-            PathName = pathName,
+            Track = track,
             Offset = offset,
             Forward = forward
         };
@@ -637,12 +635,14 @@ public class TypedDataSerializer : ITypedDataSerializer
             _ = reader.ReadInt32();
             var scriptName = _stringSerializer.Deserialize(reader);
 
-            //ToDo: Create reusable method for read item, see TypedDataSerializer and ExtraDataSerializer
-            if (string.Equals(itemState?.PathName, "/Script/FicsItNetworksComputer.FINItemStateFileSystem"))
+            if (string.Equals(scriptName, "/Script/FicsItNetworksComputer.FINItemStateFileSystem"))
             {
-                var length = reader.ReadInt32();
-
-                var fINItemStateFileSystem = _hexSerializer.Deserialize(reader, length);
+                var (finItemStateFileSystem, _) = InventoryItemHelper.ReadStatefulItem(
+                    reader,
+                    header,
+                    _propertySerializer,
+                    _hexSerializer,
+                    scriptName);
 
                 return new StatefulInventoryItem
                 {
@@ -651,13 +651,18 @@ public class TypedDataSerializer : ITypedDataSerializer
                     ItemState = itemState,
                     ExtraProperty = property,
                     ScriptName = scriptName,
-                    FINItemStateFileSystem = fINItemStateFileSystem
+                    FINItemStateFileSystem = finItemStateFileSystem
                 };
             }
             else
             {
                 var unknown = reader.ReadInt32();
-                var properties = _propertySerializer.DeserializeProperties(reader, header).ToArray();
+                var (_, properties) = InventoryItemHelper.ReadStatefulItem(
+                    reader,
+                    header,
+                    _propertySerializer,
+                    _hexSerializer,
+                    scriptName);
 
                 if (!isArrayProperty)
                     property = _propertySerializer.DeserializeProperty(reader, header);
