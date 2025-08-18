@@ -30,6 +30,9 @@ public class HeaderSerializer : IHeaderSerializer
         if (saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || saveVersion > (int)FSaveCustomVersion.LatestVersion)
             throw new NotSupportedException($"Unsupported save version {saveVersion}. Supported range {(int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents}-{(int)FSaveCustomVersion.LatestVersion}.");
 
+        if (!BuildVersions.IsKnown(buildVersion))
+            throw new NotSupportedException($"Unsupported build version {buildVersion}.");
+
         string? saveName = null;
 
         if (headerVersion >= 14)
@@ -84,6 +87,10 @@ public class HeaderSerializer : IHeaderSerializer
     {
         writer.Write(header.HeaderVersion);
         writer.Write(header.SaveVersion);
+
+        if (!BuildVersions.IsKnown(header.BuildVersion))
+            throw new NotSupportedException($"Unsupported build version {header.BuildVersion}.");
+
         writer.Write(header.BuildVersion);
 
         if (header.HeaderVersion >= 14)

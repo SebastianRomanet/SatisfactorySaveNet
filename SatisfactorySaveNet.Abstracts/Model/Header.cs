@@ -5,20 +5,27 @@ namespace SatisfactorySaveNet.Abstracts.Model;
 public class Header
 {
     /// <summary>
-    /// For a version list see the header SaveCustomVersion.h in the Community resources <see href="https://satisfactory.fandom.com/wiki/Community_resources">see here</see>
+    /// Version of the header structure.
+    /// See <see cref="SaveHeaderVersion"/> for known values.
     /// </summary>
     public int HeaderVersion { get; set; }
 
     /// <summary>
-    /// For a version list see the header FGSaveManagerInterface.h in the Community resources <see href="https://satisfactory.fandom.com/wiki/Community_resources">see here</see>
+    /// Version of the save serialization format.
+    /// See <see cref="FSaveCustomVersion"/> for known values.
     /// </summary>
     public int SaveVersion { get; set; }
 
-    //ToDo: Review "Seems to always be 66297"
     /// <summary>
-    /// This is Patch <see href="https://satisfactory.fandom.com/wiki/Patch_0.6.1.3">0.6.1.3</see>
+    /// Build number of the game.
+    /// Known builds are listed in <see cref="BuildVersions"/>.
     /// </summary>
     public int BuildVersion { get; set; }
+
+    /// <summary>
+    /// Friendly name of <see cref="BuildVersion"/> if known.
+    /// </summary>
+    public string? BuildVersionName => BuildVersions.GetName(BuildVersion);
 
     /// <summary>
     /// "Persistent_Level"

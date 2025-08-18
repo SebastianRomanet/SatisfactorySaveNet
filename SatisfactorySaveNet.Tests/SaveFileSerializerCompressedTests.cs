@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using FluentAssertions;
 using SatisfactorySaveNet;
+using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Exceptions;
 using SatisfactorySaveNet.Abstracts.Model;
 
@@ -18,7 +19,7 @@ public class SaveFileSerializerCompressedTests
         {
             HeaderVersion = 5,
             SaveVersion = 21,
-            BuildVersion = 1,
+            BuildVersion = BuildVersions.Patch0613,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
