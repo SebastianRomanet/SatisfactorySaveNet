@@ -259,9 +259,6 @@ public class BodySerializer : IBodySerializer
             case BodyV8 v8:
                 SerializeV8(writer, header, v8);
                 break;
-            case BodyV8 v8:
-                SerializeV8(writer, header, v8);
-                break;
             default:
                 throw new NotSupportedException("Body serialization for this version is not implemented");
         }
@@ -292,10 +289,52 @@ public class BodySerializer : IBodySerializer
     {
         if (header.SaveVersion < 41)
             throw new NotSupportedException("BodyV8 serialization for save versions below 41 is not implemented");
-        if (header.SaveVersion >= 51)
-            throw new NotSupportedException("BodyV8 serialization for save versions >= 51 is not implemented");
 
-        // Only support a single persistent level with no objects
+        if (header.SaveVersion >= 51)
+        {
+            // Save versions 51+ use a simplified format.  At the moment we only
+            // support emitting an empty persistent level with no grid, objects or
+            // collectables.  This is sufficient for creating minimal new saves
+            // but anything more complex is not yet implemented.
+
+            if (body.Grid is not null)
+                throw new NotSupportedException("Grid serialization not implemented");
+
+            if (body.ObjectReferences is { Count: > 0 })
+                throw new NotSupportedException("Object reference serialization not implemented");
+
+            if (body.Levels.Count != 1)
+                throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
+
+            var emptyLevel = body.Levels.First();
+            if (emptyLevel.Objects.Count != 0 || emptyLevel.Collectables.Count != 0 || (emptyLevel.SecondCollectables?.Count ?? 0) != 0)
+                throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
+
+            // no non-persistent levels
+            writer.Write(0);
+
+            // binary length of persistent level block consisting of
+            // nrObjectHeaders + nrCollectables + binarySizeObjects + nrObjects + nrSecondCollectables
+            const long binaryLength = 24;
+            writer.Write(binaryLength);
+
+            // nrObjectHeaders
+            writer.Write(0);
+            // nrCollectables
+            writer.Write(0);
+            // binarySizeObjects (only nrObjects int)
+            writer.Write(4L);
+            // nrObjects
+            writer.Write(0);
+            // nrSecondCollectables
+            writer.Write(0);
+            return;
+        }
+
+        // Save versions 41-50.  These include a grid section and allow a single
+        // persistent level with optional objects, collectables and references.
+
+        // Only support a single persistent level with no grid data
         if (body.Grid is not null)
             throw new NotSupportedException("Grid serialization not implemented");
 
@@ -365,43 +404,5 @@ public class BodySerializer : IBodySerializer
                 _objectReferenceSerializer.Serialize(writer, objRef);
             }
         }
-    }
-
-    private void SerializeV8(BinaryWriter writer, Header header, BodyV8 body)
-    {
-        if (header.SaveVersion < 41)
-            throw new NotSupportedException("BodyV8 serialization for save versions below 41 is not implemented");
-
-        // Only support a single persistent level with no objects or collectables
-        if (body.Grid is not null)
-            throw new NotSupportedException("Grid serialization not implemented");
-
-        if (body.ObjectReferences is { Count: > 0 })
-            throw new NotSupportedException("Object reference serialization not implemented");
-
-        if (body.Levels.Count != 1)
-            throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
-
-        var level = body.Levels.First();
-        if (level.Objects.Count != 0 || level.Collectables.Count != 0 || (level.SecondCollectables?.Count ?? 0) != 0)
-            throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
-
-        // no non-persistent levels
-        writer.Write(0);
-
-        // binary length of persistent level block
-        const long binaryLength = 24; // nrObjectHeaders + nrCollectables + binarySizeObjects + nrObjects + nrSecondCollectables
-        writer.Write(binaryLength);
-
-        // nrObjectHeaders
-        writer.Write(0);
-        // nrCollectables
-        writer.Write(0);
-        // binarySizeObjects (only nrObjects int)
-        writer.Write(4L);
-        // nrObjects
-        writer.Write(0);
-        // nrSecondCollectables
-        writer.Write(0);
     }
 }
