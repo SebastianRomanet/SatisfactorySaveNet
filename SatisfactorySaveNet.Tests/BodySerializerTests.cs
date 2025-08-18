@@ -179,4 +179,58 @@ public class BodySerializerTests
         rtActor.Position.Y.Should().Be(2f);
         rtActor.Position.Z.Should().Be(3f);
     }
+
+    [Test]
+    public void SerializeV8_WithObject_RoundTrip_SaveVersion51()
+    {
+        var header = new Header
+        {
+            HeaderVersion = 7,
+            SaveVersion = 51,
+            BuildVersion = 1,
+            MapName = "Map",
+            MapOptions = string.Empty,
+            SessionName = "Session",
+            PlayedSeconds = 0,
+            SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+            SessionVisibility = 0
+        };
+
+        var actor = new ActorObject
+        {
+            TypePath = "/Game/Actor",
+            ObjectReference = new ObjectReference { LevelName = "Level", PathName = "/Game/Actor" },
+            NeedTransform = 1,
+            Rotation = new Vector4(0, 0, 0, 1),
+            Position = new Vector3(1, 2, 3),
+            Scale = new Vector3(1, 1, 1),
+            PlacedInLevel = 1,
+            ParentObjectRoot = string.Empty,
+            ParentObjectName = string.Empty
+        };
+
+        var level = new Level();
+        level.Objects.Add(actor);
+        var body = new BodyV8();
+        body.Levels.Add(level);
+
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
+        {
+            BodySerializer.Instance.Serialize(writer, header, body);
+        }
+
+        stream.Position = 0;
+        using var reader = new BinaryReader(stream);
+        var roundTripped = BodySerializer.Instance.Deserialize(reader, header) as BodyV8;
+
+        roundTripped.Should().NotBeNull();
+        roundTripped!.Levels.Single().Objects.Should().HaveCount(1);
+        var rtActor = roundTripped.Levels.Single().Objects.First() as ActorObject;
+        rtActor.Should().NotBeNull();
+        rtActor!.TypePath.Should().Be("/Game/Actor");
+        rtActor.Position.X.Should().Be(1f);
+        rtActor.Position.Y.Should().Be(2f);
+        rtActor.Position.Z.Should().Be(3f);
+    }
 }
