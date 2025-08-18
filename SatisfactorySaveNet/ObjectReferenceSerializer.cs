@@ -26,4 +26,10 @@ public class ObjectReferenceSerializer : IObjectReferenceSerializer
             PathName = pathName
         };
     }
+
+    public void Serialize(BinaryWriter writer, ObjectReference reference)
+    {
+        _stringSerializer.Serialize(writer, reference.LevelName);
+        _stringSerializer.Serialize(writer, reference.PathName);
+    }
 }

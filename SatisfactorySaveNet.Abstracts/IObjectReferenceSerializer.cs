@@ -6,4 +6,5 @@ namespace SatisfactorySaveNet.Abstracts;
 public interface IObjectReferenceSerializer
 {
     public ObjectReference Deserialize(BinaryReader reader);
+    public void Serialize(BinaryWriter writer, ObjectReference reference);
 }

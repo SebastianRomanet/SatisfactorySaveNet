@@ -40,6 +40,21 @@ public class ObjectSerializer : IObjectSerializer
         };
     }
 
+    public void Serialize(BinaryWriter writer, Header header, ComponentObject obj)
+    {
+        switch (obj)
+        {
+            case ActorObject actor:
+                SerializeActor(writer, header, actor);
+                break;
+            case ComponentObject component:
+                SerializeComponent(writer, header, component);
+                break;
+            default:
+                throw new CorruptedSatisFactorySaveFileException("Encountered unknown object type");
+        }
+    }
+
     private ActorObject DeserializeActor(BinaryReader reader, Header header, ActorObject actorObject)
     {
         if (header.SaveVersion >= 41)
@@ -93,6 +108,29 @@ public class ObjectSerializer : IObjectSerializer
         return actorObject;
     }
 
+    private void SerializeActor(BinaryWriter writer, Header header, ActorObject actor)
+    {
+        if (header.SaveVersion >= 41)
+        {
+            writer.Write(actor.EntitySaveVersion ?? header.SaveVersion);
+            writer.Write(0);
+        }
+
+        using var data = new MemoryStream();
+        using (var bw = new BinaryWriter(data, System.Text.Encoding.UTF8, true))
+        {
+            _stringSerializer.Serialize(bw, actor.ParentObjectRoot);
+            _stringSerializer.Serialize(bw, actor.ParentObjectName);
+            bw.Write(actor.Components.Count);
+            foreach (var comp in actor.Components)
+                _objectReferenceSerializer.Serialize(bw, comp);
+            // no properties or extra data supported
+        }
+
+        writer.Write((int)data.Length);
+        writer.Write(data.ToArray());
+    }
+
     private ComponentObject DeserializeComponent(BinaryReader reader, Header header, ComponentObject componentObject)
     {
         if (header.SaveVersion >= 41)
@@ -121,5 +159,24 @@ public class ObjectSerializer : IObjectSerializer
             reader.BaseStream.Seek(missingBytes, SeekOrigin.Current);
 
         return componentObject;
+    }
+
+    private void SerializeComponent(BinaryWriter writer, Header header, ComponentObject component)
+    {
+        if (header.SaveVersion >= 41)
+        {
+            writer.Write(component.EntitySaveVersion ?? header.SaveVersion);
+            writer.Write(0);
+        }
+
+        using var data = new MemoryStream();
+        using (var bw = new BinaryWriter(data, System.Text.Encoding.UTF8, true))
+        {
+            // write property terminator
+            _stringSerializer.Serialize(bw, "None");
+        }
+
+        writer.Write((int)data.Length);
+        writer.Write(data.ToArray());
     }
 }

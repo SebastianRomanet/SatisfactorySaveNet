@@ -31,6 +31,22 @@ public class ObjectHeaderSerializer : IObjectHeaderSerializer
         };
     }
 
+    public void Serialize(BinaryWriter writer, ComponentObject obj, int? saveVersion)
+    {
+        writer.Write(obj.Type);
+        switch (obj)
+        {
+            case ActorObject actor:
+                SerializeActorHeader(writer, actor, saveVersion);
+                break;
+            case ComponentObject component:
+                SerializeComponentHeader(writer, component, saveVersion);
+                break;
+            default:
+                throw new CorruptedSatisFactorySaveFileException("Encountered unknown object type");
+        }
+    }
+
     private ActorObject DeserializeActorHeader(BinaryReader reader, int? saveVersion)
     {
         var typePath = _stringSerializer.Deserialize(reader);
@@ -59,6 +75,26 @@ public class ObjectHeaderSerializer : IObjectHeaderSerializer
         };
     }
 
+    private void SerializeActorHeader(BinaryWriter writer, ActorObject actor, int? saveVersion)
+    {
+        _stringSerializer.Serialize(writer, actor.TypePath);
+        _objectReferenceSerializer.Serialize(writer, actor.ObjectReference);
+        if (saveVersion >= 51)
+            writer.Write(actor.Flags ?? 0);
+        writer.Write(actor.NeedTransform);
+        writer.Write(actor.Rotation.X);
+        writer.Write(actor.Rotation.Y);
+        writer.Write(actor.Rotation.Z);
+        writer.Write(actor.Rotation.W);
+        writer.Write(actor.Position.X);
+        writer.Write(actor.Position.Y);
+        writer.Write(actor.Position.Z);
+        writer.Write(actor.Scale.X);
+        writer.Write(actor.Scale.Y);
+        writer.Write(actor.Scale.Z);
+        writer.Write(actor.PlacedInLevel);
+    }
+
     private ComponentObject DeserializeComponentHeader(BinaryReader reader, int? saveVersion)
     {
         var typePath = _stringSerializer.Deserialize(reader);
@@ -77,5 +113,14 @@ public class ObjectHeaderSerializer : IObjectHeaderSerializer
             ParentActorName = parentActorName,
             Flags = flags
         };
+    }
+
+    private void SerializeComponentHeader(BinaryWriter writer, ComponentObject component, int? saveVersion)
+    {
+        _stringSerializer.Serialize(writer, component.TypePath);
+        _objectReferenceSerializer.Serialize(writer, component.ObjectReference);
+        if (saveVersion >= 51)
+            writer.Write(component.Flags ?? 0);
+        _stringSerializer.Serialize(writer, component.ParentActorName);
     }
 }
