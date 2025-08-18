@@ -24,11 +24,11 @@ public class HeaderSerializer : IHeaderSerializer
         var saveVersion = reader.ReadInt32();
         var buildVersion = reader.ReadInt32();
 
-        if (headerVersion > (int)SaveHeaderVersion.LatestVersion)
-            throw new NotSupportedException($"Unsupported header version {headerVersion}. Supported up to {(int)SaveHeaderVersion.LatestVersion}.");
+        if (headerVersion >= (int)SaveHeaderVersion.VersionPlusOne)
+            throw new NotSupportedException($"Unsupported header version {headerVersion}. Supported up to {(int)SaveHeaderVersion.VersionPlusOne - 1}.");
 
-        if (saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || saveVersion > (int)FSaveCustomVersion.LatestVersion)
-            throw new NotSupportedException($"Unsupported save version {saveVersion}. Supported range {(int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents}-{(int)FSaveCustomVersion.LatestVersion}.");
+        if (saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || saveVersion >= (int)FSaveCustomVersion.VersionPlusOne)
+            throw new NotSupportedException($"Unsupported save version {saveVersion}. Supported range {(int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents}-{(int)FSaveCustomVersion.VersionPlusOne - 1}.");
 
         if (!BuildVersions.IsKnown(buildVersion))
             throw new NotSupportedException($"Unsupported build version {buildVersion}.");
@@ -55,8 +55,8 @@ public class HeaderSerializer : IHeaderSerializer
 
         //ToDo: Set flag to inform about possible loss of information due to deprecated reader
 
-        //if (header.HeaderVersion > SaveHeaderVersion.LatestVersion)
-        //if (header.SaveVersion < FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || header.SaveVersion > FSaveCustomVersion.LatestVersion)
+        //if (header.HeaderVersion >= SaveHeaderVersion.VersionPlusOne)
+        //if (header.SaveVersion < FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || header.SaveVersion >= FSaveCustomVersion.VersionPlusOne)
 
         if (header.HeaderVersion >= 5)
             header.SessionVisibility = reader.ReadByte();
