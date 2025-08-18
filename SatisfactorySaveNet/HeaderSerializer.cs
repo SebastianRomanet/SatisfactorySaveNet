@@ -73,4 +73,43 @@ public class HeaderSerializer : IHeaderSerializer
 
             return header;
     }
+
+    public void Serialize(BinaryWriter writer, Header header)
+    {
+        writer.Write(header.HeaderVersion);
+        writer.Write(header.SaveVersion);
+        writer.Write(header.BuildVersion);
+
+        if (header.HeaderVersion >= 14)
+            _stringSerializer.Serialize(writer, header.SaveName ?? string.Empty);
+
+        _stringSerializer.Serialize(writer, header.MapName);
+        _stringSerializer.Serialize(writer, header.MapOptions);
+        _stringSerializer.Serialize(writer, header.SessionName);
+
+        writer.Write(header.PlayedSeconds);
+        writer.Write(header.SaveDateTimeUtc.Ticks);
+
+        if (header.HeaderVersion >= 5)
+            writer.Write(header.SessionVisibility ?? 0);
+
+        if (header.HeaderVersion >= 7)
+            writer.Write(header.EditorObjectVersion ?? 0);
+
+        if (header.HeaderVersion >= 8)
+        {
+            _stringSerializer.Serialize(writer, header.ModMetadata ?? string.Empty);
+            writer.Write(header.IsModdedSave ?? 0);
+        }
+
+        if (header.HeaderVersion >= 10)
+            _stringSerializer.Serialize(writer, header.SaveIdentifier ?? string.Empty);
+
+        if (header.HeaderVersion >= 13)
+        {
+            writer.Write(header.IsPartitionedWorld ?? 0);
+            _hexSerializer.Serialize(writer, header.SaveDataHash ?? string.Empty);
+            writer.Write(header.IsCreativeModeEnabled ?? 0);
+        }
+    }
 }

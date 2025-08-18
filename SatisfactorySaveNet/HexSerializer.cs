@@ -20,4 +20,10 @@ public class HexSerializer : IHexSerializer
 
         return new string([.. hexChars]);
     }
+
+    public void Serialize(BinaryWriter writer, string hex)
+    {
+        foreach (var c in hex)
+            writer.Write((byte)c);
+    }
 }

@@ -6,4 +6,5 @@ namespace SatisfactorySaveNet.Abstracts;
 public interface IHeaderSerializer
 {
     public Header Deserialize(BinaryReader reader);
+    public void Serialize(BinaryWriter writer, Header header);
 }

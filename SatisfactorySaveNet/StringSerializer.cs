@@ -31,6 +31,26 @@ public class StringSerializer : IStringSerializer
         return result;
     }
 
+    public void Serialize(BinaryWriter writer, string value)
+    {
+        // Strings in save files are stored with a length prefix including the terminating null.
+        // Positive length indicates UTF-8, negative length indicates UTF-16.
+        var isAscii = value.All(char.IsAscii);
+        var terminated = value + '\0';
+        if (isAscii)
+        {
+            var bytes = Encoding.UTF8.GetBytes(terminated);
+            writer.Write(bytes.Length);
+            writer.Write(bytes);
+        }
+        else
+        {
+            var bytes = Encoding.Unicode.GetBytes(terminated);
+            writer.Write(-(bytes.Length / 2));
+            writer.Write(bytes);
+        }
+    }
+
     private static char[] ReadCharArray(BinaryReader reader)
     {
         var count = reader.ReadInt32();
