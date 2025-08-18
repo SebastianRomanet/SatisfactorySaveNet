@@ -259,9 +259,6 @@ public class BodySerializer : IBodySerializer
             case BodyV8 v8:
                 SerializeV8(writer, header, v8);
                 break;
-            case BodyV8 v8:
-                SerializeV8(writer, header, v8);
-                break;
             default:
                 throw new NotSupportedException("Body serialization for this version is not implemented");
         }
@@ -367,41 +364,4 @@ public class BodySerializer : IBodySerializer
         }
     }
 
-    private void SerializeV8(BinaryWriter writer, Header header, BodyV8 body)
-    {
-        if (header.SaveVersion < 41)
-            throw new NotSupportedException("BodyV8 serialization for save versions below 41 is not implemented");
-
-        // Only support a single persistent level with no objects or collectables
-        if (body.Grid is not null)
-            throw new NotSupportedException("Grid serialization not implemented");
-
-        if (body.ObjectReferences is { Count: > 0 })
-            throw new NotSupportedException("Object reference serialization not implemented");
-
-        if (body.Levels.Count != 1)
-            throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
-
-        var level = body.Levels.First();
-        if (level.Objects.Count != 0 || level.Collectables.Count != 0 || (level.SecondCollectables?.Count ?? 0) != 0)
-            throw new NotSupportedException("BodyV8 serialization only supports an empty persistent level");
-
-        // no non-persistent levels
-        writer.Write(0);
-
-        // binary length of persistent level block
-        const long binaryLength = 24; // nrObjectHeaders + nrCollectables + binarySizeObjects + nrObjects + nrSecondCollectables
-        writer.Write(binaryLength);
-
-        // nrObjectHeaders
-        writer.Write(0);
-        // nrCollectables
-        writer.Write(0);
-        // binarySizeObjects (only nrObjects int)
-        writer.Write(4L);
-        // nrObjects
-        writer.Write(0);
-        // nrSecondCollectables
-        writer.Write(0);
-    }
 }

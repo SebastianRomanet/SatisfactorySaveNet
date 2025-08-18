@@ -19,7 +19,7 @@ public class SaveSerializerTests
             Header = new Header
             {
                 HeaderVersion = 5,
-                SaveVersion = 10,
+                SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
                 BuildVersion = 1,
                 SaveName = "Test",
                 MapName = "Map",
