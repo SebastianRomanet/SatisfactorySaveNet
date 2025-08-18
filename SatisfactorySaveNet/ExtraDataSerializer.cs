@@ -591,17 +591,17 @@ public class ExtraDataSerializer : IExtraDataSerializer
         var nrElements = reader.ReadInt32();
         var vehicleObjects = new CargoObject[nrElements];
 
-        var unknownSize = header.SaveVersion >= 41 ? 105 : 53;
+        var serializedDataSize = header.SaveVersion >= 41 ? 105 : 53;
 
         for (var x = 0; x < nrElements; x++)
         {
             var name = _stringSerializer.Deserialize(reader);
-            var unknown = _hexSerializer.Deserialize(reader, unknownSize);
+            var serializedData = _hexSerializer.Deserialize(reader, serializedDataSize);
 
             vehicleObjects[x] = new CargoObject
             {
                 Name = name,
-                Unknown = unknown,
+                SerializedData = serializedData,
             };
         }
 
@@ -647,17 +647,17 @@ public class ExtraDataSerializer : IExtraDataSerializer
         var nrElements = reader.ReadInt32();
         var vehicleObjects = new CargoObject[nrElements];
 
-        var unknownSize = header.SaveVersion >= 41 ? 105 : 53;
+        var serializedDataSize = header.SaveVersion >= 41 ? 105 : 53;
 
         for (var x = 0; x < nrElements; x++)
         {
             var name = _stringSerializer.Deserialize(reader);
-            var unknown = _hexSerializer.Deserialize(reader, unknownSize);
+            var serializedData = _hexSerializer.Deserialize(reader, serializedDataSize);
 
             vehicleObjects[x] = new CargoObject
             {
                 Name = name,
-                Unknown = unknown,
+                SerializedData = serializedData,
             };
         }
 
