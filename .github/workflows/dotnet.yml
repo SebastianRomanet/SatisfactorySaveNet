@@ -20,14 +20,14 @@ jobs:
       run: |
        dotnet restore ./SatisfactorySaveNet/SatisfactorySaveNet.csproj
        dotnet restore ./SatisfactorySaveNet.Abstracts/SatisfactorySaveNet.Abstracts.csproj
-       #dotnet restore ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
+       dotnet restore ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
     - name: Build
       run: |
        dotnet build --no-restore --configuration Release ./SatisfactorySaveNet/SatisfactorySaveNet.csproj
        dotnet build --no-restore --configuration Release ./SatisfactorySaveNet.Abstracts/SatisfactorySaveNet.Abstracts.csproj
-       #dotnet build --no-restore --configuration Debug ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
-    #- name: Test
-    #  run: dotnet test --no-build --verbosity normal ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
+       dotnet build --no-restore --configuration Debug ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
+    - name: Test
+      run: dotnet test --no-build --verbosity normal ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
     - name: publish SatisfactorySaveNet.Abstracts on nuget.org
       id: publish_nuget1
       uses: alirezanet/publish-nuget@v3.1.0
