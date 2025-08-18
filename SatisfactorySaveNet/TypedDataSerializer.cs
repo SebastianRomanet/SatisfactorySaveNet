@@ -525,15 +525,13 @@ public class TypedDataSerializer : ITypedDataSerializer
 
     private RailroadTrackPosition DeserializeRailroadTrackPosition(BinaryReader reader)
     {
-        var levelName = _stringSerializer.Deserialize(reader); //ToDo: ObjectReference
-        var pathName = _stringSerializer.Deserialize(reader);
+        var track = _objectReferenceSerializer.Deserialize(reader);
         var offset = reader.ReadSingle();
         var forward = reader.ReadSingle();
 
         return new RailroadTrackPosition
         {
-            LevelName = levelName,
-            PathName = pathName,
+            Track = track,
             Offset = offset,
             Forward = forward
         };
