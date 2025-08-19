@@ -2,6 +2,7 @@ using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 using FluentAssertions;
 using System;
+using System.IO;
 using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet.Tests;
@@ -167,5 +168,47 @@ public class SaveSerializerTests
     {
         Action act = () => new SaveFileSerializer(HeaderSerializer.Instance, ChunkSerializer.Instance, null!);
         act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("bodySerializer");
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task SerializeDeserialize_Large_File_Minimal_Memory(bool async)
+    {
+        var save = new SatisfactorySave
+        {
+            Header = new Header
+            {
+                HeaderVersion = 5,
+                SaveVersion = 21,
+                BuildVersion = BuildVersions.Patch0613,
+                SaveName = "Test",
+                MapName = "Map",
+                MapOptions = string.Empty,
+                SessionName = "Session",
+                PlayedSeconds = 0,
+                SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                SessionVisibility = 0
+            },
+            Body = new BodyPreV8(),
+            DiscardedBytes = new byte[5 * 1024 * 1024]
+        };
+
+        long before = GC.GetTotalMemory(true);
+        if (async)
+        {
+            using var stream = new MemoryStream();
+            await _serializer.SerializeAsync(save, stream);
+            stream.Position = 0;
+            _ = await _serializer.DeserializeAsync(stream);
+        }
+        else
+        {
+            using var stream = new MemoryStream();
+            _serializer.Serialize(save, stream);
+            stream.Position = 0;
+            _ = _serializer.Deserialize(stream);
+        }
+        long after = GC.GetTotalMemory(true);
+        (after - before).Should().BeLessThan(60 * 1024 * 1024);
     }
 }
