@@ -23,6 +23,12 @@ public class Header
     public int BuildVersion { get; set; }
 
     /// <summary>
+    /// Indicates whether the save header or version is not fully supported
+    /// by the current serializer.
+    /// </summary>
+    public bool IsDeprecated { get; set; }
+
+    /// <summary>
     /// Friendly name of <see cref="BuildVersion"/> if known.
     /// </summary>
     public string? BuildVersionName => BuildVersions.GetName(BuildVersion);

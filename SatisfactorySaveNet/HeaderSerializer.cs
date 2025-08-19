@@ -24,11 +24,10 @@ public class HeaderSerializer : IHeaderSerializer
         var saveVersion = reader.ReadInt32();
         var buildVersion = reader.ReadInt32();
 
-        if (headerVersion >= (int)SaveHeaderVersion.VersionPlusOne)
-            throw new NotSupportedException($"Unsupported header version {headerVersion}. Supported up to {(int)SaveHeaderVersion.VersionPlusOne - 1}.");
-
-        if (saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || saveVersion >= (int)FSaveCustomVersion.VersionPlusOne)
-            throw new NotSupportedException($"Unsupported save version {saveVersion}. Supported range {(int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents}-{(int)FSaveCustomVersion.VersionPlusOne - 1}.");
+        var isDeprecated =
+            headerVersion >= (int)SaveHeaderVersion.VersionPlusOne ||
+            saveVersion < (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents ||
+            saveVersion >= (int)FSaveCustomVersion.VersionPlusOne;
 
         if (!BuildVersions.IsKnown(buildVersion))
             throw new NotSupportedException($"Unsupported build version {buildVersion}.");
@@ -43,6 +42,7 @@ public class HeaderSerializer : IHeaderSerializer
             HeaderVersion = headerVersion,
             SaveVersion = saveVersion,
             BuildVersion = buildVersion,
+            IsDeprecated = isDeprecated,
             SaveName = saveName,
 
             MapName = _stringSerializer.Deserialize(reader),
@@ -52,11 +52,6 @@ public class HeaderSerializer : IHeaderSerializer
             PlayedSeconds = reader.ReadInt32(),
             SaveDateTimeUtc = new DateTime(reader.ReadInt64(), DateTimeKind.Utc),
         };
-
-        //ToDo: Set flag to inform about possible loss of information due to deprecated reader
-
-        //if (header.HeaderVersion >= SaveHeaderVersion.VersionPlusOne)
-        //if (header.SaveVersion < FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents || header.SaveVersion >= FSaveCustomVersion.VersionPlusOne)
 
         if (header.HeaderVersion >= 5)
             header.SessionVisibility = reader.ReadByte();
