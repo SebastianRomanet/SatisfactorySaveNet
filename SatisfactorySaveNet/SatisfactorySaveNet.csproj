@@ -4,6 +4,7 @@
     <IsPublishable>true</IsPublishable>
     <IsPackable>true</IsPackable>
     <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <PackageId>SatisfactorySaveNet</PackageId>
     <PackageTags>satisfactory serializer</PackageTags>
     <Description>Satisfactory save file reader and writer</Description>
@@ -27,6 +28,10 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SatisfactorySaveNet.Abstracts\SatisfactorySaveNet.Abstracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="$(OutputPath)$(AssemblyName).xml" Pack="true" PackagePath="" />
   </ItemGroup>
 
 </Project>

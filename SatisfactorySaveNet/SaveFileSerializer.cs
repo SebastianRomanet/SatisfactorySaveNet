@@ -10,6 +10,9 @@ using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet;
 
+/// <summary>
+/// Provides methods to serialize and deserialize <see cref="SatisfactorySave"/> instances.
+/// </summary>
 public class SaveFileSerializer : ISaveFileSerializer
 {
     public static readonly ISaveFileSerializer Instance = new SaveFileSerializer(HeaderSerializer.Instance, ChunkSerializer.Instance, BodySerializer.Instance);
@@ -34,6 +37,12 @@ public class SaveFileSerializer : ISaveFileSerializer
     private readonly IChunkSerializer _chunkSerializer;
     private readonly IBodySerializer _bodySerializer;
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SaveFileSerializer"/> class.
+    /// </summary>
+    /// <param name="headerSerializer">Serializer for the save file header.</param>
+    /// <param name="chunkSerializer">Serializer for chunk metadata.</param>
+    /// <param name="bodySerializer">Serializer for the save file body.</param>
     public SaveFileSerializer(IHeaderSerializer headerSerializer, IChunkSerializer chunkSerializer, IBodySerializer bodySerializer)
     {
         ArgumentNullException.ThrowIfNull(headerSerializer);
@@ -45,40 +54,83 @@ public class SaveFileSerializer : ISaveFileSerializer
         _bodySerializer = bodySerializer;
     }
 
+    /// <summary>
+    /// Deserializes a <see cref="SatisfactorySave"/> from the specified file path.
+    /// </summary>
+    /// <param name="path">The path to the save file.</param>
+    /// <returns>The deserialized save.</returns>
     public SatisfactorySave Deserialize(string path)
     {
         using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
         return Deserialize(stream);
     }
 
+    /// <summary>
+    /// Deserializes a <see cref="SatisfactorySave"/> from the provided byte array.
+    /// </summary>
+    /// <param name="data">The raw save file data.</param>
+    /// <returns>The deserialized save.</returns>
     public SatisfactorySave Deserialize(byte[] data)
     {
         using var stream = Manager.GetStream(data);
         return Deserialize(stream);
     }
 
+    /// <summary>
+    /// Deserializes a <see cref="SatisfactorySave"/> from the given stream.
+    /// </summary>
+    /// <param name="stream">The stream containing the save data.</param>
+    /// <returns>The deserialized save.</returns>
     public SatisfactorySave Deserialize(Stream stream) => DeserializeInternal(stream, false, CancellationToken.None).GetAwaiter().GetResult();
 
+    /// <summary>
+    /// Asynchronously deserializes a <see cref="SatisfactorySave"/> from the specified file path.
+    /// </summary>
+    /// <param name="path">The path to the save file.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized save.</returns>
     public async Task<SatisfactorySave> DeserializeAsync(string path, CancellationToken cancellationToken = default)
     {
         await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
         return await DeserializeAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Asynchronously deserializes a <see cref="SatisfactorySave"/> from the provided byte array.
+    /// </summary>
+    /// <param name="data">The raw save file data.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized save.</returns>
     public async Task<SatisfactorySave> DeserializeAsync(byte[] data, CancellationToken cancellationToken = default)
     {
         using var stream = Manager.GetStream(data);
         return await DeserializeAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Asynchronously deserializes a <see cref="SatisfactorySave"/> from the given stream.
+    /// </summary>
+    /// <param name="stream">The stream containing the save data.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the deserialized save.</returns>
     public Task<SatisfactorySave> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default) => DeserializeInternal(stream, true, cancellationToken).AsTask();
 
+    /// <summary>
+    /// Serializes the specified <see cref="SatisfactorySave"/> to the given file path.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <param name="path">The destination file path.</param>
     public void Serialize(SatisfactorySave save, string path)
     {
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
         SerializeInternal(save, stream, false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
+    /// <summary>
+    /// Serializes the specified <see cref="SatisfactorySave"/> and returns the result as a byte array.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <returns>The serialized save data.</returns>
     public byte[] Serialize(SatisfactorySave save)
     {
         using var stream = Manager.GetStream();
@@ -86,16 +138,41 @@ public class SaveFileSerializer : ISaveFileSerializer
         return stream.ToArray();
     }
 
+    /// <summary>
+    /// Serializes the specified <see cref="SatisfactorySave"/> to the provided stream.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <param name="stream">The destination stream.</param>
     public void Serialize(SatisfactorySave save, Stream stream) => SerializeInternal(save, stream, false, CancellationToken.None).GetAwaiter().GetResult();
 
+    /// <summary>
+    /// Asynchronously serializes the specified <see cref="SatisfactorySave"/> to the provided stream.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <param name="stream">The destination stream.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public Task SerializeAsync(SatisfactorySave save, Stream stream, CancellationToken cancellationToken = default) => SerializeInternal(save, stream, true, cancellationToken).AsTask();
 
+    /// <summary>
+    /// Asynchronously serializes the specified <see cref="SatisfactorySave"/> to the given file path.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <param name="path">The destination file path.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation.</returns>
     public async Task SerializeAsync(SatisfactorySave save, string path, CancellationToken cancellationToken = default)
     {
         await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
         await SerializeInternal(save, stream, true, cancellationToken).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Asynchronously serializes the specified <see cref="SatisfactorySave"/> and returns the result as a byte array.
+    /// </summary>
+    /// <param name="save">The save to serialize.</param>
+    /// <param name="cancellationToken">Token to monitor for cancellation requests.</param>
+    /// <returns>A task that represents the asynchronous operation. The task result contains the serialized save data.</returns>
     public async Task<byte[]> SerializeAsync(SatisfactorySave save, CancellationToken cancellationToken = default)
     {
         using var stream = Manager.GetStream();
