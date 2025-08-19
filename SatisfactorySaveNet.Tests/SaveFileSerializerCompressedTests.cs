@@ -14,7 +14,7 @@ namespace SatisfactorySaveNet.Tests;
 [Parallelizable(ParallelScope.All)]
 public class SaveFileSerializerCompressedTests
 {
-    private static byte[] CreateCompressedSave(bool corrupt = false)
+    private static byte[] CreateCompressedSave(bool corrupt = false, int extraSize = 0)
     {
         var header = new Header
         {
@@ -40,6 +40,8 @@ public class SaveFileSerializerCompressedTests
             bw.Write(0); // nrObjectHeaders
             bw.Write(0); // nrObjects
             bw.Write(0); // nrCollectables
+            if (extraSize > 0)
+                bw.Write(new byte[extraSize]);
         }
         var bodyBytes = body.ToArray();
 
@@ -110,5 +112,19 @@ public class SaveFileSerializerCompressedTests
             var act = () => SaveFileSerializer.Instance.Deserialize(data);
             act.Should().Throw<CorruptedSatisFactorySaveFileException>();
         }
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Deserialize_Compressed_Large_File_Minimal_Memory(bool async)
+    {
+        var data = CreateCompressedSave(extraSize: 5 * 1024 * 1024);
+        long before = GC.GetTotalMemory(true);
+        if (async)
+            _ = await SaveFileSerializer.Instance.DeserializeAsync(data);
+        else
+            _ = SaveFileSerializer.Instance.Deserialize(data);
+        long after = GC.GetTotalMemory(true);
+        (after - before).Should().BeLessThan(60 * 1024 * 1024);
     }
 }
