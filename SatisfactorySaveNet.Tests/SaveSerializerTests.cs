@@ -66,4 +66,64 @@ public class SaveSerializerTests
         result.Header.SaveVersion.Should().Be(save.Header.SaveVersion);
         result.Body.Should().BeOfType<BodyPreV8>();
     }
+
+    [Test]
+    public void Serialize_Then_Deserialize_Metadata_Roundtrip()
+    {
+        var save = new SatisfactorySave
+        {
+            Header = new Header
+            {
+                HeaderVersion = 5,
+                SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
+                BuildVersion = BuildVersions.Patch0613,
+                SaveName = "Test",
+                MapName = "Map",
+                MapOptions = string.Empty,
+                SessionName = "Session",
+                PlayedSeconds = 0,
+                SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                SessionVisibility = 0
+            },
+            Body = new BodyPreV8(),
+            ModelVersion = "1.2.3-test",
+            DiscardedBytes = new byte[] { 1, 2, 3 }
+        };
+
+        var data = _serializer.Serialize(save);
+        var result = _serializer.Deserialize(data);
+
+        result.ModelVersion.Should().Be(save.ModelVersion);
+        result.DiscardedBytes.Should().BeEquivalentTo(save.DiscardedBytes);
+    }
+
+    [Test]
+    public void Serialize_Then_Deserialize_Metadata_Roundtrip_Compressed()
+    {
+        var save = new SatisfactorySave
+        {
+            Header = new Header
+            {
+                HeaderVersion = 5,
+                SaveVersion = 21,
+                BuildVersion = BuildVersions.Patch0613,
+                SaveName = "Test",
+                MapName = "Map",
+                MapOptions = string.Empty,
+                SessionName = "Session",
+                PlayedSeconds = 0,
+                SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                SessionVisibility = 0
+            },
+            Body = new BodyPreV8(),
+            ModelVersion = "1.2.3-test",
+            DiscardedBytes = new byte[] { 1, 2, 3 }
+        };
+
+        var data = _serializer.Serialize(save);
+        var result = _serializer.Deserialize(data);
+
+        result.ModelVersion.Should().Be(save.ModelVersion);
+        result.DiscardedBytes.Should().BeEquivalentTo(save.DiscardedBytes);
+    }
 }

@@ -5,6 +5,8 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Linq;
+using System.Text;
 
 namespace SatisfactorySaveNet;
 
@@ -61,10 +63,16 @@ public class SaveFileSerializer : ISaveFileSerializer
         var header = _headerSerializer.Deserialize(reader);
 
         BodyBase? body;
+        byte[]? metadataBytes = null;
 
         if (header.SaveVersion < 21)
         {
             body = _bodySerializer.Deserialize(reader, header);
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                var remaining = (int)(reader.BaseStream.Length - reader.BaseStream.Position);
+                metadataBytes = reader.ReadBytes(remaining);
+            }
         }
         else
         {
@@ -88,8 +96,6 @@ public class SaveFileSerializer : ISaveFileSerializer
                 if (subChunk.UncompressedSize != summary.UncompressedSize)
                     throw new CorruptedSatisFactorySaveFileException("Corrupted sub chunk was read");
 
-                //var startPosition = stream.Position;
-
                 using var chunk = Manager.GetStream();
                 chunk.Write(reader.ReadBytes(summary.CompressedSize));
                 chunk.Seek(0, SeekOrigin.Begin);
@@ -98,8 +104,6 @@ public class SaveFileSerializer : ISaveFileSerializer
                 {
                     zStream.CopyTo(buffer);
                 }
-
-                //stream.Position = startPosition + summary.CompressedSize;
 
                 uncompressedSize += summary.UncompressedSize;
             }
@@ -116,20 +120,27 @@ public class SaveFileSerializer : ISaveFileSerializer
 
             var offset = header.SaveVersion >= 41 ? 8 : 4;
 
-            if (uncompressedSize != dataLength + offset)
+            if (uncompressedSize < dataLength + offset)
                 throw new CorruptedSatisFactorySaveFileException("Umcompressed size mismatch detected");
 
             body = _bodySerializer.Deserialize(bufferReader, header);
 
-            if (bufferReader.BaseStream.Position != bufferReader.BaseStream.Length)
-                throw new CorruptedSatisFactorySaveFileException("The full body has not been read yet");
+            if (bufferReader.BaseStream.Position < bufferReader.BaseStream.Length)
+            {
+                var remaining = (int)(bufferReader.BaseStream.Length - bufferReader.BaseStream.Position);
+                metadataBytes = bufferReader.ReadBytes(remaining);
+            }
         }
+
+        var (modelVersion, discarded) = ParseMetadata(metadataBytes);
 
         return new SatisfactorySave
         {
             Header = header,
-            Body = body
-        }; //ToDo: Versioned models && include discarded reads
+            Body = body,
+            ModelVersion = modelVersion ?? GetAssemblyVersion(),
+            DiscardedBytes = discarded
+        };
     }
 
     public void Serialize(SatisfactorySave save, string path)
@@ -156,6 +167,9 @@ public class SaveFileSerializer : ISaveFileSerializer
         if (save.Header.SaveVersion < 21)
         {
             _bodySerializer.Serialize(writer, save.Header, save.Body);
+            var meta = BuildMetadata(save);
+            if (meta.Length > 0)
+                writer.Write(meta);
             return;
         }
 
@@ -174,6 +188,11 @@ public class SaveFileSerializer : ISaveFileSerializer
             buffer.Write(BitConverter.GetBytes((int)bodyStream.Length));
 
         bodyStream.CopyTo(buffer);
+
+        var metaData = BuildMetadata(save);
+        if (metaData.Length > 0)
+            buffer.Write(metaData, 0, metaData.Length);
+
         buffer.Position = 0;
 
         var chunkBuffer = new byte[ChunkInfo.ChunkSize];
@@ -228,5 +247,42 @@ public class SaveFileSerializer : ISaveFileSerializer
 
             compressed.CopyTo(stream);
         }
+    }
+
+    private static readonly byte[] MetadataPrefix = Encoding.ASCII.GetBytes("SSN\0");
+
+    private static string GetAssemblyVersion() =>
+        typeof(SaveFileSerializer).Assembly.GetName().Version?.ToString() ?? string.Empty;
+
+    private static byte[] BuildMetadata(SatisfactorySave save)
+    {
+        using var ms = Manager.GetStream();
+        using var writer = new BinaryWriter(ms, Encoding.UTF8, true);
+        var version = save.ModelVersion ?? GetAssemblyVersion();
+        writer.Write(MetadataPrefix);
+        writer.Write(version);
+        if (save.DiscardedBytes != null && save.DiscardedBytes.Length > 0)
+            writer.Write(save.DiscardedBytes);
+        writer.Flush();
+        return ms.ToArray();
+    }
+
+    private static (string? version, byte[]? discarded) ParseMetadata(byte[]? data)
+    {
+        if (data == null || data.Length == 0)
+            return (null, data);
+
+        using var ms = new MemoryStream(data);
+        using var reader = new BinaryReader(ms, Encoding.UTF8, true);
+        var prefix = reader.ReadBytes(MetadataPrefix.Length);
+        if (prefix.SequenceEqual(MetadataPrefix))
+        {
+            var version = reader.ReadString();
+            var remaining = ms.Length - ms.Position;
+            var discarded = remaining > 0 ? reader.ReadBytes((int)remaining) : Array.Empty<byte>();
+            return (version, discarded.Length > 0 ? discarded : Array.Empty<byte>());
+        }
+
+        return (null, data);
     }
 }
