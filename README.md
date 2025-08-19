@@ -25,12 +25,15 @@ Install-Package SatisfactorySaveNet
 
 ## Version compatibility
 
-| Component      | Supported versions                                                                 |
-| -------------- | ----------------------------------------------------------------------------------- |
-| Save header    | up to `SaveHeaderVersion.SaveNameInHeader`                                         |
-| Save format    | `FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents` – `FSaveCustomVersion.TrainBlueprintClassAdded` |
+| Component   | Supported versions |
+| ----------- | ------------------ |
+| Game builds | `BuildVersions.Patch0400` (146871)<br>`BuildVersions.Patch0613` (202470)<br>`BuildVersions.Patch0700` (208250)<br>`BuildVersions.Patch1000` (424353) |
+| Save header | up to `SaveHeaderVersion.SaveNameInHeader` (14) |
+| Save format | `FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents` – `FSaveCustomVersion.TrainBlueprintClassAdded` |
 
 Saves outside of these ranges throw a `NotSupportedException` during deserialization.
+
+Header version 14 and the latest save versions are already handled; they become available as soon as the corresponding build numbers are added to `BuildVersions.cs`.
 
 ## Common serialization/deserialization scenarios
 
