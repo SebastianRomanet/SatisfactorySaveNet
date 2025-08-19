@@ -77,3 +77,19 @@ var serializer = new SaveFileSerializer(
 - Replace `IHeaderSerializer`, `IChunkSerializer`, or `IBodySerializer` with custom implementations to handle experimental features or logging.
 - Choose between synchronous and asynchronous APIs depending on your workload.
 
+## Testing with Example Saves
+
+`LatestSaveRoundtripTests` runs roundtrip checks against all `.sav` files in `SatisfactorySaveNet/Example Files` to ensure the library can deserialize and reserialize real game saves.
+
+Run all tests:
+
+```bash
+dotnet test
+```
+
+Run only the roundtrip tests:
+
+```bash
+dotnet test --filter LatestSaveRoundtripTests
+```
+
