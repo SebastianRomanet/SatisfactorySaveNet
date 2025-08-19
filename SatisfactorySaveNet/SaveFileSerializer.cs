@@ -5,6 +5,7 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet;
 
@@ -132,6 +133,28 @@ public class SaveFileSerializer : ISaveFileSerializer
         }; //ToDo: Versioned models && include discarded reads
     }
 
+    public async Task<SatisfactorySave> DeserializeAsync(string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true);
+        return await DeserializeAsync(stream).ConfigureAwait(false);
+    }
+
+    public async Task<SatisfactorySave> DeserializeAsync(byte[] data)
+    {
+        using var stream = Manager.GetStream(data);
+        return await DeserializeAsync(stream).ConfigureAwait(false);
+    }
+
+    public async Task<SatisfactorySave> DeserializeAsync(Stream stream)
+    {
+        using var buffer = Manager.GetStream();
+        await stream.CopyToAsync(buffer).ConfigureAwait(false);
+        if (buffer.Length == 0)
+            throw new CorruptedSatisFactorySaveFileException("Save file is empty");
+        buffer.Position = 0;
+        return Deserialize(buffer);
+    }
+
     public void Serialize(SatisfactorySave save, string path)
     {
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -228,5 +251,26 @@ public class SaveFileSerializer : ISaveFileSerializer
 
             compressed.CopyTo(stream);
         }
+    }
+
+    public async Task SerializeAsync(SatisfactorySave save, Stream stream)
+    {
+        using var buffer = Manager.GetStream();
+        Serialize(save, buffer);
+        buffer.Position = 0;
+        await buffer.CopyToAsync(stream).ConfigureAwait(false);
+    }
+
+    public async Task SerializeAsync(SatisfactorySave save, string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+        await SerializeAsync(save, stream).ConfigureAwait(false);
+    }
+
+    public async Task<byte[]> SerializeAsync(SatisfactorySave save)
+    {
+        using var stream = Manager.GetStream();
+        await SerializeAsync(save, stream).ConfigureAwait(false);
+        return stream.ToArray();
     }
 }

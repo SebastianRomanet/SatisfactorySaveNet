@@ -2,6 +2,7 @@ using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
 using FluentAssertions;
 using System;
+using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet.Tests;
 
@@ -11,8 +12,9 @@ public class SaveSerializerTests
 {
     private readonly ISaveFileSerializer _serializer = SaveFileSerializer.Instance;
 
-    [Test]
-    public void Serialize_Then_Deserialize_Roundtrip()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Serialize_Then_Deserialize_Roundtrip(bool async)
     {
         var save = new SatisfactorySave
         {
@@ -32,15 +34,25 @@ public class SaveSerializerTests
             Body = new BodyPreV8()
         };
 
-        var data = _serializer.Serialize(save);
-        var result = _serializer.Deserialize(data);
+        SatisfactorySave result;
+        if (async)
+        {
+            var data = await _serializer.SerializeAsync(save);
+            result = await _serializer.DeserializeAsync(data);
+        }
+        else
+        {
+            var data = _serializer.Serialize(save);
+            result = _serializer.Deserialize(data);
+        }
 
         result.Header.SaveVersion.Should().Be(save.Header.SaveVersion);
         result.Body.Should().BeOfType<BodyPreV8>();
     }
 
-    [Test]
-    public void Serialize_Then_Deserialize_Roundtrip_Compressed()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Serialize_Then_Deserialize_Roundtrip_Compressed(bool async)
     {
         var save = new SatisfactorySave
         {
@@ -60,8 +72,17 @@ public class SaveSerializerTests
             Body = new BodyPreV8()
         };
 
-        var data = _serializer.Serialize(save);
-        var result = _serializer.Deserialize(data);
+        SatisfactorySave result;
+        if (async)
+        {
+            var data = await _serializer.SerializeAsync(save);
+            result = await _serializer.DeserializeAsync(data);
+        }
+        else
+        {
+            var data = _serializer.Serialize(save);
+            result = _serializer.Deserialize(data);
+        }
 
         result.Header.SaveVersion.Should().Be(save.Header.SaveVersion);
         result.Body.Should().BeOfType<BodyPreV8>();
