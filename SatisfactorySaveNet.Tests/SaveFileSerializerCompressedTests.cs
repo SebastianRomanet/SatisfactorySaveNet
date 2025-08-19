@@ -6,6 +6,7 @@ using SatisfactorySaveNet;
 using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Exceptions;
 using SatisfactorySaveNet.Abstracts.Model;
+using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet.Tests;
 
@@ -80,20 +81,34 @@ public class SaveFileSerializerCompressedTests
         return stream.ToArray();
     }
 
-    [Test]
-    public void Deserialize_Compressed_Save()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Deserialize_Compressed_Save(bool async)
     {
         var data = CreateCompressedSave();
-        var save = SaveFileSerializer.Instance.Deserialize(data);
+        SatisfactorySave save;
+        if (async)
+            save = await SaveFileSerializer.Instance.DeserializeAsync(data);
+        else
+            save = SaveFileSerializer.Instance.Deserialize(data);
         save.Header.SaveVersion.Should().Be(21);
         save.Body.Should().BeOfType<BodyPreV8>();
     }
 
-    [Test]
-    public void Deserialize_Corrupted_Chunk_Throws()
+    [TestCase(false)]
+    [TestCase(true)]
+    public async Task Deserialize_Corrupted_Chunk_Throws(bool async)
     {
         var data = CreateCompressedSave(corrupt: true);
-        var act = () => SaveFileSerializer.Instance.Deserialize(data);
-        act.Should().Throw<CorruptedSatisFactorySaveFileException>();
+        if (async)
+        {
+            var act = async () => await SaveFileSerializer.Instance.DeserializeAsync(data);
+            await act.Should().ThrowAsync<CorruptedSatisFactorySaveFileException>();
+        }
+        else
+        {
+            var act = () => SaveFileSerializer.Instance.Deserialize(data);
+            act.Should().Throw<CorruptedSatisFactorySaveFileException>();
+        }
     }
 }

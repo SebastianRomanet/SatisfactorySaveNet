@@ -5,8 +5,7 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.IO;
 using System.IO.Compression;
-using System.Linq;
-using System.Text;
+using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet;
 
@@ -143,6 +142,28 @@ public class SaveFileSerializer : ISaveFileSerializer
         };
     }
 
+    public async Task<SatisfactorySave> DeserializeAsync(string path)
+    {
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true);
+        return await DeserializeAsync(stream).ConfigureAwait(false);
+    }
+
+    public async Task<SatisfactorySave> DeserializeAsync(byte[] data)
+    {
+        using var stream = Manager.GetStream(data);
+        return await DeserializeAsync(stream).ConfigureAwait(false);
+    }
+
+    public async Task<SatisfactorySave> DeserializeAsync(Stream stream)
+    {
+        using var buffer = Manager.GetStream();
+        await stream.CopyToAsync(buffer).ConfigureAwait(false);
+        if (buffer.Length == 0)
+            throw new CorruptedSatisFactorySaveFileException("Save file is empty");
+        buffer.Position = 0;
+        return Deserialize(buffer);
+    }
+
     public void Serialize(SatisfactorySave save, string path)
     {
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -249,40 +270,24 @@ public class SaveFileSerializer : ISaveFileSerializer
         }
     }
 
-    private static readonly byte[] MetadataPrefix = Encoding.ASCII.GetBytes("SSN\0");
-
-    private static string GetAssemblyVersion() =>
-        typeof(SaveFileSerializer).Assembly.GetName().Version?.ToString() ?? string.Empty;
-
-    private static byte[] BuildMetadata(SatisfactorySave save)
+    public async Task SerializeAsync(SatisfactorySave save, Stream stream)
     {
-        using var ms = Manager.GetStream();
-        using var writer = new BinaryWriter(ms, Encoding.UTF8, true);
-        var version = save.ModelVersion ?? GetAssemblyVersion();
-        writer.Write(MetadataPrefix);
-        writer.Write(version);
-        if (save.DiscardedBytes != null && save.DiscardedBytes.Length > 0)
-            writer.Write(save.DiscardedBytes);
-        writer.Flush();
-        return ms.ToArray();
+        using var buffer = Manager.GetStream();
+        Serialize(save, buffer);
+        buffer.Position = 0;
+        await buffer.CopyToAsync(stream).ConfigureAwait(false);
     }
 
-    private static (string? version, byte[]? discarded) ParseMetadata(byte[]? data)
+    public async Task SerializeAsync(SatisfactorySave save, string path)
     {
-        if (data == null || data.Length == 0)
-            return (null, data);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
+        await SerializeAsync(save, stream).ConfigureAwait(false);
+    }
 
-        using var ms = new MemoryStream(data);
-        using var reader = new BinaryReader(ms, Encoding.UTF8, true);
-        var prefix = reader.ReadBytes(MetadataPrefix.Length);
-        if (prefix.SequenceEqual(MetadataPrefix))
-        {
-            var version = reader.ReadString();
-            var remaining = ms.Length - ms.Position;
-            var discarded = remaining > 0 ? reader.ReadBytes((int)remaining) : Array.Empty<byte>();
-            return (version, discarded.Length > 0 ? discarded : Array.Empty<byte>());
-        }
-
-        return (null, data);
+    public async Task<byte[]> SerializeAsync(SatisfactorySave save)
+    {
+        using var stream = Manager.GetStream();
+        await SerializeAsync(save, stream).ConfigureAwait(false);
+        return stream.ToArray();
     }
 }
