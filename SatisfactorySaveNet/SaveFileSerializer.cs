@@ -62,10 +62,16 @@ public class SaveFileSerializer : ISaveFileSerializer
         var header = _headerSerializer.Deserialize(reader);
 
         BodyBase? body;
+        byte[]? metadataBytes = null;
 
         if (header.SaveVersion < 21)
         {
             body = _bodySerializer.Deserialize(reader, header);
+            if (reader.BaseStream.Position < reader.BaseStream.Length)
+            {
+                var remaining = (int)(reader.BaseStream.Length - reader.BaseStream.Position);
+                metadataBytes = reader.ReadBytes(remaining);
+            }
         }
         else
         {
@@ -89,8 +95,6 @@ public class SaveFileSerializer : ISaveFileSerializer
                 if (subChunk.UncompressedSize != summary.UncompressedSize)
                     throw new CorruptedSatisFactorySaveFileException("Corrupted sub chunk was read");
 
-                //var startPosition = stream.Position;
-
                 using var chunk = Manager.GetStream();
                 chunk.Write(reader.ReadBytes(summary.CompressedSize));
                 chunk.Seek(0, SeekOrigin.Begin);
@@ -99,8 +103,6 @@ public class SaveFileSerializer : ISaveFileSerializer
                 {
                     zStream.CopyTo(buffer);
                 }
-
-                //stream.Position = startPosition + summary.CompressedSize;
 
                 uncompressedSize += summary.UncompressedSize;
             }
@@ -117,20 +119,27 @@ public class SaveFileSerializer : ISaveFileSerializer
 
             var offset = header.SaveVersion >= 41 ? 8 : 4;
 
-            if (uncompressedSize != dataLength + offset)
+            if (uncompressedSize < dataLength + offset)
                 throw new CorruptedSatisFactorySaveFileException("Umcompressed size mismatch detected");
 
             body = _bodySerializer.Deserialize(bufferReader, header);
 
-            if (bufferReader.BaseStream.Position != bufferReader.BaseStream.Length)
-                throw new CorruptedSatisFactorySaveFileException("The full body has not been read yet");
+            if (bufferReader.BaseStream.Position < bufferReader.BaseStream.Length)
+            {
+                var remaining = (int)(bufferReader.BaseStream.Length - bufferReader.BaseStream.Position);
+                metadataBytes = bufferReader.ReadBytes(remaining);
+            }
         }
+
+        var (modelVersion, discarded) = ParseMetadata(metadataBytes);
 
         return new SatisfactorySave
         {
             Header = header,
-            Body = body
-        }; //ToDo: Versioned models && include discarded reads
+            Body = body,
+            ModelVersion = modelVersion ?? GetAssemblyVersion(),
+            DiscardedBytes = discarded
+        };
     }
 
     public async Task<SatisfactorySave> DeserializeAsync(string path)
@@ -179,6 +188,9 @@ public class SaveFileSerializer : ISaveFileSerializer
         if (save.Header.SaveVersion < 21)
         {
             _bodySerializer.Serialize(writer, save.Header, save.Body);
+            var meta = BuildMetadata(save);
+            if (meta.Length > 0)
+                writer.Write(meta);
             return;
         }
 
@@ -197,6 +209,11 @@ public class SaveFileSerializer : ISaveFileSerializer
             buffer.Write(BitConverter.GetBytes((int)bodyStream.Length));
 
         bodyStream.CopyTo(buffer);
+
+        var metaData = BuildMetadata(save);
+        if (metaData.Length > 0)
+            buffer.Write(metaData, 0, metaData.Length);
+
         buffer.Position = 0;
 
         var chunkBuffer = new byte[ChunkInfo.ChunkSize];
