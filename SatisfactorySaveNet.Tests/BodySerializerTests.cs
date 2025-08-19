@@ -22,7 +22,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 5,
             SaveVersion = 10,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -89,7 +89,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 41,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -134,7 +134,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 41,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",
@@ -188,7 +188,7 @@ public class BodySerializerTests
         {
             HeaderVersion = 7,
             SaveVersion = 51,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",

@@ -22,11 +22,17 @@ public static class BuildVersions
     /// </summary>
     public const int Patch0700 = 208250;
 
+    /// <summary>
+    /// Release build for Version 1.0.
+    /// </summary>
+    public const int Patch1000 = 424353;
+
     private static readonly IReadOnlyDictionary<int, string> _names = new Dictionary<int, string>
     {
         [Patch0400] = "Update 4 (0.4.0.0)",
         [Patch0613] = "Patch 0.6.1.3",
-        [Patch0700] = "Patch 0.7.0.0"
+        [Patch0700] = "Patch 0.7.0.0",
+        [Patch1000] = "Patch 1.0.0.0"
     };
 
     /// <summary>

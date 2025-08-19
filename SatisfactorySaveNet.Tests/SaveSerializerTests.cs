@@ -24,7 +24,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -63,7 +63,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -100,7 +100,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -130,7 +130,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -182,7 +182,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,
@@ -223,7 +223,7 @@ public class SaveSerializerTests
             {
                 HeaderVersion = 5,
                 SaveVersion = 21,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "Test",
                 MapName = "Map",
                 MapOptions = string.Empty,

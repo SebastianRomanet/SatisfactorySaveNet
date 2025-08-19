@@ -19,7 +19,7 @@ public class SaveVersion51Tests
         {
             HeaderVersion = 14,
             SaveVersion = 51,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             SaveName = "TestSave",
             MapName = "Map",
             MapOptions = "options",
@@ -65,7 +65,7 @@ public class SaveVersion51Tests
             {
                 HeaderVersion = 14,
                 SaveVersion = 51,
-                BuildVersion = BuildVersions.Patch0613,
+                BuildVersion = BuildVersions.Patch1000,
                 SaveName = "TestSave",
                 MapName = "Map",
                 MapOptions = string.Empty,
