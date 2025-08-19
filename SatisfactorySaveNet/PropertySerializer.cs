@@ -801,11 +801,6 @@ public class PropertySerializer : IPropertySerializer
                             : new Vector3Union { Value = _vectorSerializer.DeserializeVec3(reader) };
                         break;
                     }
-                    if (string.Equals(type, "/BuildGunUtilities/BGU_Subsystem.BGU_Subsystem_C", StringComparison.Ordinal)) //ToDo: Debug?
-                    {
-                        key = new Vector3Union { Value = _vectorSerializer.DeserializeVec3(reader) };
-                        break;
-                    }
                     if (string.Equals(propertyName, "mSaveData", StringComparison.Ordinal) || string.Equals(propertyName, "mUnresolvedSaveData", StringComparison.Ordinal))
                     {
                         key = new Vector3IUnion { Value = _vectorSerializer.DeserializeVec3I(reader) };
@@ -837,14 +832,10 @@ public class PropertySerializer : IPropertySerializer
                     value = new FloatUnion { Value = reader.ReadSingle() };
                     break;
                 case nameof(StrProperty):
-                    value = string.Equals(type, "/BuildGunUtilities/BGU_Subsystem.BGU_Subsystem_C", StringComparison.Ordinal)
-                        ? new StrUnion { Unknown1 = reader.ReadSingle(), Unknown2 = reader.ReadSingle(), Unknown3 = reader.ReadSingle(), Value = _stringSerializer.Deserialize(reader) }
-                        : null;
+                    value = new StrUnion { Value = _stringSerializer.Deserialize(reader) };
                     break;
                 case nameof(ObjectProperty):
-                    value = string.Equals(type, "/BuildGunUtilities/BGU_Subsystem.BGU_Subsystem_C", StringComparison.Ordinal)
-                        ? new ObjectReferenceUnion { Unknown1 = reader.ReadSingle(), Unknown2 = reader.ReadSingle(), Unknown3 = reader.ReadSingle(), Unknown4 = reader.ReadSingle(), Unknown5 = _stringSerializer.Deserialize(reader) }
-                        : new ObjectReferenceUnion { Value = _objectReferenceSerializer.Deserialize(reader) };
+                    value = new ObjectReferenceUnion { Value = _objectReferenceSerializer.Deserialize(reader) };
                     break;
                 case nameof(TextProperty):
                     value = new TextUnion { Value = DeserializeTextProperty(reader, header) };
