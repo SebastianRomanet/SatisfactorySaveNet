@@ -33,7 +33,7 @@ jobs:
       uses: alirezanet/publish-nuget@v3.1.0
       with:
         PROJECT_FILE_PATH: ./SatisfactorySaveNet.Abstracts/SatisfactorySaveNet.Abstracts.csproj
-        PACKAGE_NAME: SatisfactorySaveNet
+        PACKAGE_NAME: SatisfactorySaveNet.Abstracts
         VERSION_STATIC: 3.1.0
         TAG_COMMIT: false
         NUGET_KEY: ${{secrets.NUGET_API_KEY}}
