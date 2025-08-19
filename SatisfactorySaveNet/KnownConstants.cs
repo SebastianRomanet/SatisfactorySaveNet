@@ -131,12 +131,12 @@ public static class KnownConstants
 
     public static bool IsConveyorLift(string path)
     {
-        return ConveyorLifts.Contains(path) || ModConveyorLifts.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return ConveyorLifts.Contains(path) || ModConveyorLifts.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 
     public static bool IsConveyorBelt(string path)
     {
-        return ConveyorBelts.Contains(path) || ModConveyorBelts.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return ConveyorBelts.Contains(path) || ModConveyorBelts.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 
     public static bool IsConveyorActor(string path)
@@ -151,21 +151,21 @@ public static class KnownConstants
 
     public static bool IsPowerLine(string path)
     {
-        return PowerLines.Contains(path) || ModPowerLines.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return PowerLines.Contains(path) || ModPowerLines.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 
     public static bool IsVehicle(string path)
     {
-        return Vehicles.Contains(path) || ModVehicles.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return Vehicles.Contains(path) || ModVehicles.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 
     public static bool IsLocomotive(string path)
     {
-        return Locomotives.Contains(path) || ModLocomotives.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return Locomotives.Contains(path) || ModLocomotives.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 
     public static bool IsFreightWagon(string path)
     {
-        return FreightWagon.Contains(path) || ModFreightWagon.Any(x => x.StartsWith(path, StringComparison.Ordinal));
+        return FreightWagon.Contains(path) || ModFreightWagon.Any(x => path.StartsWith(x, StringComparison.Ordinal));
     }
 }
