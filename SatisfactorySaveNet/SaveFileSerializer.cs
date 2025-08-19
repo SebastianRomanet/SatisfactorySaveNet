@@ -5,6 +5,11 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.IO;
 using System.IO.Compression;
+#if NET7_0_OR_GREATER
+using CompressionStream = System.IO.Compression.ZLibStream;
+#else
+using CompressionStream = System.IO.Compression.DeflateStream;
+#endif
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -45,9 +50,15 @@ public class SaveFileSerializer : ISaveFileSerializer
     /// <param name="bodySerializer">Serializer for the save file body.</param>
     public SaveFileSerializer(IHeaderSerializer headerSerializer, IChunkSerializer chunkSerializer, IBodySerializer bodySerializer)
     {
+#if NET7_0_OR_GREATER
         ArgumentNullException.ThrowIfNull(headerSerializer);
         ArgumentNullException.ThrowIfNull(chunkSerializer);
         ArgumentNullException.ThrowIfNull(bodySerializer);
+#else
+        if (headerSerializer is null) throw new ArgumentNullException(nameof(headerSerializer));
+        if (chunkSerializer is null) throw new ArgumentNullException(nameof(chunkSerializer));
+        if (bodySerializer is null) throw new ArgumentNullException(nameof(bodySerializer));
+#endif
 
         _headerSerializer = headerSerializer;
         _chunkSerializer = chunkSerializer;
@@ -242,7 +253,7 @@ public class SaveFileSerializer : ISaveFileSerializer
                 await CopyExactAsync(stream, chunk, summary.CompressedSize, async, cancellationToken).ConfigureAwait(false);
                 chunk.Position = 0;
 
-                using (var zStream = new ZLibStream(chunk, CompressionMode.Decompress, true))
+                using (var zStream = new CompressionStream(chunk, CompressionMode.Decompress, true))
                 {
                     await CopyToAsync(zStream, buffer, async, cancellationToken).ConfigureAwait(false);
                 }
@@ -331,7 +342,7 @@ public class SaveFileSerializer : ISaveFileSerializer
             var read = buffer.Read(chunkBuffer, 0, chunkBuffer.Length);
 
             using var compressed = Manager.GetStream();
-            using (var zStream = new ZLibStream(compressed, CompressionMode.Compress, true))
+            using (var zStream = new CompressionStream(compressed, CompressionMode.Compress, true))
             {
                 await WriteAsync(zStream, chunkBuffer, 0, read, async, cancellationToken).ConfigureAwait(false);
             }
@@ -396,7 +407,7 @@ public class SaveFileSerializer : ISaveFileSerializer
         if (async)
             return stream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
         stream.Write(buffer, offset, count);
-        return ValueTask.CompletedTask;
+        return GetCompletedValueTask();
     }
 
     private static ValueTask CopyToAsync(Stream source, Stream destination, bool async, CancellationToken cancellationToken)
@@ -404,7 +415,16 @@ public class SaveFileSerializer : ISaveFileSerializer
         if (async)
             return new ValueTask(source.CopyToAsync(destination, cancellationToken));
         source.CopyTo(destination);
+        return GetCompletedValueTask();
+    }
+
+    private static ValueTask GetCompletedValueTask()
+    {
+#if NETSTANDARD2_1
+        return default;
+#else
         return ValueTask.CompletedTask;
+#endif
     }
 
     private static async ValueTask ReadExactlyAsync(Stream stream, byte[] buffer, int count, bool async, CancellationToken cancellationToken)

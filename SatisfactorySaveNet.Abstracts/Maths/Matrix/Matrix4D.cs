@@ -925,9 +925,15 @@ namespace SatisfactorySaveNet.Abstracts.Maths.Matrix
                 throw new ArgumentOutOfRangeException(nameof(fovy));
             }
 
+#if NET7_0_OR_GREATER
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(aspect);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(depthNear);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(depthFar);
+#else
+            if (aspect <= 0) throw new ArgumentOutOfRangeException(nameof(aspect));
+            if (depthNear <= 0) throw new ArgumentOutOfRangeException(nameof(depthNear));
+            if (depthFar <= 0) throw new ArgumentOutOfRangeException(nameof(depthFar));
+#endif
 
             var maxY = depthNear * Math.Tan(0.5 * fovy);
             var minY = -maxY;
@@ -991,9 +997,15 @@ namespace SatisfactorySaveNet.Abstracts.Maths.Matrix
             out Matrix4D result
         )
         {
+#if NET7_0_OR_GREATER
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(depthNear);
             ArgumentOutOfRangeException.ThrowIfNegativeOrZero(depthFar);
             ArgumentOutOfRangeException.ThrowIfGreaterThanOrEqual(depthNear, depthFar);
+#else
+            if (depthNear <= 0) throw new ArgumentOutOfRangeException(nameof(depthNear));
+            if (depthFar <= 0) throw new ArgumentOutOfRangeException(nameof(depthFar));
+            if (depthNear >= depthFar) throw new ArgumentOutOfRangeException(nameof(depthNear));
+#endif
 
             var x = 2.0 * depthNear / (right - left);
             var y = 2.0 * depthNear / (top - bottom);
