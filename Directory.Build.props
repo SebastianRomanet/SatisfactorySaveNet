@@ -4,7 +4,7 @@
         <Copyright>R3dByt3</Copyright>
         <Authors>R3dByt3</Authors>
         <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-        <TargetFramework>net8.0</TargetFramework>
+        <TargetFrameworks>net8.0;net6.0;netstandard2.1</TargetFrameworks>
         <LangVersion>12.0</LangVersion>
         <Nullable>enable</Nullable>
         <ImplicitUsings>disable</ImplicitUsings>
@@ -25,6 +25,10 @@
 
     <ItemGroup>
         <None Include="$(ProjectDir)..\README.md" Pack="true" PackagePath="\" />
+    </ItemGroup>
+
+    <ItemGroup Condition="'$(TargetFramework)' == 'net6.0' or '$(TargetFramework)' == 'netstandard2.1'">
+        <Compile Include="$(MSBuildThisFileDirectory)Polyfills/RequiredMemberAttributes.cs" Link="RequiredMemberAttributes.cs" />
     </ItemGroup>
 
     <ItemGroup Condition="$(MSBuildProjectName.EndsWith('Tests'))">

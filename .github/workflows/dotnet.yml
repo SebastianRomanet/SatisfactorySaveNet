@@ -14,7 +14,9 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 8.0.x
+        dotnet-version: |
+          8.0.x
+          6.0.x
         dotnet-quality: 'ga'
     - name: Restore dependencies
       run: |
@@ -27,7 +29,9 @@ jobs:
        dotnet build --no-restore --configuration Release ./SatisfactorySaveNet.Abstracts/SatisfactorySaveNet.Abstracts.csproj
        dotnet build --no-restore --configuration Debug ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
     - name: Test
-      run: dotnet test --no-build --verbosity normal ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
+      run: |
+       dotnet test --no-build --verbosity normal --framework net8.0 ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
+       dotnet test --no-build --verbosity normal --framework net6.0 ./SatisfactorySaveNet.Tests/SatisfactorySaveNet.Tests.csproj
     - name: publish SatisfactorySaveNet.Abstracts on nuget.org
       id: publish_nuget1
       uses: alirezanet/publish-nuget@v3.1.0

@@ -22,11 +22,19 @@ public class StringSerializer : IStringSerializer
     public string Deserialize(BinaryReader reader)
     {
         Span<char> chars = ReadCharArray(reader);
+#if NET7_0_OR_GREATER
         var result = StringPool.Shared.GetOrAdd(chars.TrimEnd('\0'));
+#else
+        var result = StringPool.Shared.GetOrAdd(new string(chars.ToArray()).TrimEnd('\0'));
+#endif
 #if DEBUG
         var sf1 = new System.Diagnostics.StackTrace(true).GetFrame(1)!;
         var sf2 = new System.Diagnostics.StackTrace(true).GetFrame(2)!;
+#if NET7_0_OR_GREATER
         _logger.LogInformation("DeserializeString {Value} - IsASCII {IsASCII} - File {File1} - Line {Line1} - File {File2} - Line {Line2}", result, result.All(char.IsAscii), sf1.GetFileName(), sf1.GetFileLineNumber(), sf2.GetFileName(), sf2.GetFileLineNumber());
+#else
+        _logger.LogInformation("DeserializeString {Value} - IsASCII {IsASCII} - File {File1} - Line {Line1} - File {File2} - Line {Line2}", result, result.All(c => c <= 127), sf1.GetFileName(), sf1.GetFileLineNumber(), sf2.GetFileName(), sf2.GetFileLineNumber());
+#endif
 #endif
         return result;
     }
@@ -35,7 +43,11 @@ public class StringSerializer : IStringSerializer
     {
         // Strings in save files are stored with a length prefix including the terminating null.
         // Positive length indicates UTF-8, negative length indicates UTF-16.
+#if NET7_0_OR_GREATER
         var isAscii = value.All(char.IsAscii);
+#else
+        var isAscii = value.All(c => c <= 127);
+#endif
         var terminated = value + '\0';
         if (isAscii)
         {
