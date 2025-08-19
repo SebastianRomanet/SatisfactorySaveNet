@@ -3,6 +3,7 @@ using System.IO;
 using FluentAssertions;
 using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Model;
+using SatisfactorySaveNet;
 
 namespace SatisfactorySaveNet.Tests;
 
@@ -17,7 +18,7 @@ public class HeaderSerializerTests
         {
             HeaderVersion = (int)SaveHeaderVersion.VersionPlusOne,
             SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             SaveName = string.Empty,
             MapName = string.Empty,
             MapOptions = string.Empty,
@@ -54,7 +55,7 @@ public class HeaderSerializerTests
         {
             HeaderVersion = (int)SaveHeaderVersion.VersionPlusOne - 1,
             SaveVersion = (int)FSaveCustomVersion.VersionPlusOne,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             SaveName = string.Empty,
             MapName = string.Empty,
             MapOptions = string.Empty,
@@ -100,5 +101,27 @@ public class HeaderSerializerTests
 
         Action act = () => HeaderSerializer.Instance.Deserialize(reader);
         act.Should().Throw<NotSupportedException>().WithMessage("*build version*");
+    }
+
+    [Test]
+    public void Deserialize_DoesNotThrow_ForKnownBuildVersion()
+    {
+        using var stream = new MemoryStream();
+        using (var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true))
+        {
+            writer.Write((int)SaveHeaderVersion.InitialVersion);
+            writer.Write((int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents);
+            writer.Write(BuildVersions.Patch1000);
+            StringSerializer.Instance.Serialize(writer, string.Empty);
+            StringSerializer.Instance.Serialize(writer, string.Empty);
+            StringSerializer.Instance.Serialize(writer, string.Empty);
+            writer.Write(0);
+            writer.Write(DateTime.UnixEpoch.Ticks);
+        }
+
+        stream.Position = 0;
+        using var reader = new BinaryReader(stream);
+        Action act = () => HeaderSerializer.Instance.Deserialize(reader);
+        act.Should().NotThrow();
     }
 }

@@ -21,7 +21,7 @@ public class SaveFileSerializerCompressedTests
         {
             HeaderVersion = 5,
             SaveVersion = 21,
-            BuildVersion = BuildVersions.Patch0613,
+            BuildVersion = BuildVersions.Patch1000,
             MapName = "Map",
             MapOptions = string.Empty,
             SessionName = "Session",

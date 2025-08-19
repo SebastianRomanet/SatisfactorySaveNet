@@ -8,8 +8,8 @@ using SatisfactorySaveNet.Abstracts.Model;
 
 namespace SatisfactorySaveNet.Tests;
 
-[TestFixture(52, BuildVersions.Patch0700)]
-[TestFixture(53, BuildVersions.Patch0700)]
+[TestFixture(52, BuildVersions.Patch1000)]
+[TestFixture(53, BuildVersions.Patch1000)]
 [Parallelizable(ParallelScope.All)]
 public class SaveVersion52PlusTests
 {
