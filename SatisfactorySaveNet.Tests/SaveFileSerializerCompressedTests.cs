@@ -6,6 +6,7 @@ using SatisfactorySaveNet;
 using SatisfactorySaveNet.Abstracts;
 using SatisfactorySaveNet.Abstracts.Exceptions;
 using SatisfactorySaveNet.Abstracts.Model;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet.Tests;
@@ -90,7 +91,7 @@ public class SaveFileSerializerCompressedTests
         var data = CreateCompressedSave();
         SatisfactorySave save;
         if (async)
-            save = await SaveFileSerializer.Instance.DeserializeAsync(data);
+            save = await SaveFileSerializer.Instance.DeserializeAsync(data, CancellationToken.None);
         else
             save = SaveFileSerializer.Instance.Deserialize(data);
         save.Header.SaveVersion.Should().Be(21);
@@ -104,7 +105,7 @@ public class SaveFileSerializerCompressedTests
         var data = CreateCompressedSave(corrupt: true);
         if (async)
         {
-            var act = async () => await SaveFileSerializer.Instance.DeserializeAsync(data);
+            var act = async () => await SaveFileSerializer.Instance.DeserializeAsync(data, CancellationToken.None);
             await act.Should().ThrowAsync<CorruptedSatisFactorySaveFileException>();
         }
         else
@@ -121,7 +122,7 @@ public class SaveFileSerializerCompressedTests
         var data = CreateCompressedSave(extraSize: 5 * 1024 * 1024);
         long before = GC.GetTotalMemory(true);
         if (async)
-            _ = await SaveFileSerializer.Instance.DeserializeAsync(data);
+            _ = await SaveFileSerializer.Instance.DeserializeAsync(data, CancellationToken.None);
         else
             _ = SaveFileSerializer.Instance.Deserialize(data);
         long after = GC.GetTotalMemory(true);

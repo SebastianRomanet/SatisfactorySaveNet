@@ -3,6 +3,7 @@ using SatisfactorySaveNet.Abstracts.Model;
 using FluentAssertions;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet.Tests;
@@ -32,14 +33,15 @@ public class SaveSerializerTests
                 SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
                 SessionVisibility = 0
             },
-            Body = new BodyPreV8()
+            Body = new BodyPreV8(),
+            DiscardedBytes = new byte[] { 1 }
         };
 
         SatisfactorySave result;
         if (async)
         {
-            var data = await _serializer.SerializeAsync(save);
-            result = await _serializer.DeserializeAsync(data);
+            var data = await _serializer.SerializeAsync(save, CancellationToken.None);
+            result = await _serializer.DeserializeAsync(data, CancellationToken.None);
         }
         else
         {
@@ -76,8 +78,8 @@ public class SaveSerializerTests
         SatisfactorySave result;
         if (async)
         {
-            var data = await _serializer.SerializeAsync(save);
-            result = await _serializer.DeserializeAsync(data);
+            var data = await _serializer.SerializeAsync(save, CancellationToken.None);
+            result = await _serializer.DeserializeAsync(data, CancellationToken.None);
         }
         else
         {
@@ -97,7 +99,7 @@ public class SaveSerializerTests
             Header = new Header
             {
                 HeaderVersion = 5,
-                SaveVersion = (int)FSaveCustomVersion.DROPPED_WireSpanFromConnnectionComponents,
+                SaveVersion = 21,
                 BuildVersion = BuildVersions.Patch0613,
                 SaveName = "Test",
                 MapName = "Map",
@@ -197,9 +199,9 @@ public class SaveSerializerTests
         if (async)
         {
             using var stream = new MemoryStream();
-            await _serializer.SerializeAsync(save, stream);
+            await _serializer.SerializeAsync(save, stream, CancellationToken.None);
             stream.Position = 0;
-            _ = await _serializer.DeserializeAsync(stream);
+            _ = await _serializer.DeserializeAsync(stream, CancellationToken.None);
         }
         else
         {
@@ -210,5 +212,35 @@ public class SaveSerializerTests
         }
         long after = GC.GetTotalMemory(true);
         (after - before).Should().BeLessThan(60 * 1024 * 1024);
+    }
+
+    [Test]
+    public async Task SerializeAsync_CanceledToken_Throws()
+    {
+        var save = new SatisfactorySave
+        {
+            Header = new Header
+            {
+                HeaderVersion = 5,
+                SaveVersion = 21,
+                BuildVersion = BuildVersions.Patch0613,
+                SaveName = "Test",
+                MapName = "Map",
+                MapOptions = string.Empty,
+                SessionName = "Session",
+                PlayedSeconds = 0,
+                SaveDateTimeUtc = new DateTime(2020, 1, 1, 0, 0, 0, DateTimeKind.Utc),
+                SessionVisibility = 0
+            },
+            Body = new BodyPreV8(),
+            DiscardedBytes = new byte[5 * 1024 * 1024]
+        };
+
+        var cts = new CancellationTokenSource();
+        cts.Cancel();
+        var temp = Path.GetTempFileName();
+        var act = async () => await _serializer.SerializeAsync(save, temp, cts.Token);
+        await act.Should().ThrowAsync<OperationCanceledException>();
+        File.Delete(temp);
     }
 }

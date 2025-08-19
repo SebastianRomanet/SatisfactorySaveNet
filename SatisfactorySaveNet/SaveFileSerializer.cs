@@ -5,6 +5,7 @@ using SatisfactorySaveNet.Abstracts.Model;
 using System;
 using System.IO;
 using System.IO.Compression;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SatisfactorySaveNet;
@@ -56,53 +57,53 @@ public class SaveFileSerializer : ISaveFileSerializer
         return Deserialize(stream);
     }
 
-    public SatisfactorySave Deserialize(Stream stream) => DeserializeInternal(stream, false).GetAwaiter().GetResult();
+    public SatisfactorySave Deserialize(Stream stream) => DeserializeInternal(stream, false, CancellationToken.None).GetAwaiter().GetResult();
 
-    public async Task<SatisfactorySave> DeserializeAsync(string path)
+    public async Task<SatisfactorySave> DeserializeAsync(string path, CancellationToken cancellationToken = default)
     {
-        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, true);
-        return await DeserializeAsync(stream).ConfigureAwait(false);
+        await using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite, 4096, FileOptions.Asynchronous);
+        return await DeserializeAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<SatisfactorySave> DeserializeAsync(byte[] data)
+    public async Task<SatisfactorySave> DeserializeAsync(byte[] data, CancellationToken cancellationToken = default)
     {
         using var stream = Manager.GetStream(data);
-        return await DeserializeAsync(stream).ConfigureAwait(false);
+        return await DeserializeAsync(stream, cancellationToken).ConfigureAwait(false);
     }
 
-    public Task<SatisfactorySave> DeserializeAsync(Stream stream) => DeserializeInternal(stream, true).AsTask();
+    public Task<SatisfactorySave> DeserializeAsync(Stream stream, CancellationToken cancellationToken = default) => DeserializeInternal(stream, true, cancellationToken).AsTask();
 
     public void Serialize(SatisfactorySave save, string path)
     {
         using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None);
-        SerializeInternal(save, stream, false).GetAwaiter().GetResult();
+        SerializeInternal(save, stream, false, CancellationToken.None).GetAwaiter().GetResult();
     }
 
     public byte[] Serialize(SatisfactorySave save)
     {
         using var stream = Manager.GetStream();
-        SerializeInternal(save, stream, false).GetAwaiter().GetResult();
+        SerializeInternal(save, stream, false, CancellationToken.None).GetAwaiter().GetResult();
         return stream.ToArray();
     }
 
-    public void Serialize(SatisfactorySave save, Stream stream) => SerializeInternal(save, stream, false).GetAwaiter().GetResult();
+    public void Serialize(SatisfactorySave save, Stream stream) => SerializeInternal(save, stream, false, CancellationToken.None).GetAwaiter().GetResult();
 
-    public Task SerializeAsync(SatisfactorySave save, Stream stream) => SerializeInternal(save, stream, true).AsTask();
+    public Task SerializeAsync(SatisfactorySave save, Stream stream, CancellationToken cancellationToken = default) => SerializeInternal(save, stream, true, cancellationToken).AsTask();
 
-    public async Task SerializeAsync(SatisfactorySave save, string path)
+    public async Task SerializeAsync(SatisfactorySave save, string path, CancellationToken cancellationToken = default)
     {
-        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, true);
-        await SerializeInternal(save, stream, true).ConfigureAwait(false);
+        await using var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.None, 4096, FileOptions.Asynchronous);
+        await SerializeInternal(save, stream, true, cancellationToken).ConfigureAwait(false);
     }
 
-    public async Task<byte[]> SerializeAsync(SatisfactorySave save)
+    public async Task<byte[]> SerializeAsync(SatisfactorySave save, CancellationToken cancellationToken = default)
     {
         using var stream = Manager.GetStream();
-        await SerializeInternal(save, stream, true).ConfigureAwait(false);
+        await SerializeInternal(save, stream, true, cancellationToken).ConfigureAwait(false);
         return stream.ToArray();
     }
 
-    private async ValueTask<SatisfactorySave> DeserializeInternal(Stream stream, bool async)
+    private async ValueTask<SatisfactorySave> DeserializeInternal(Stream stream, bool async, CancellationToken cancellationToken)
     {
         if (stream.CanSeek && stream.Length == 0)
             throw new CorruptedSatisFactorySaveFileException("Save file is empty");
@@ -120,7 +121,7 @@ public class SaveFileSerializer : ISaveFileSerializer
             if (stream.CanSeek && stream.Position < stream.Length)
             {
                 var remaining = (int)(stream.Length - stream.Position);
-                metadataBytes = await ReadRemainingAsync(stream, remaining, async).ConfigureAwait(false);
+                metadataBytes = await ReadRemainingAsync(stream, remaining, async, cancellationToken).ConfigureAwait(false);
             }
         }
         else
@@ -131,7 +132,7 @@ public class SaveFileSerializer : ISaveFileSerializer
 
             while (!stream.CanSeek || stream.Position < stream.Length)
             {
-                var read = await ReadAsync(stream, infoBuffer, 0, infoBuffer.Length, async).ConfigureAwait(false);
+                var read = await ReadAsync(stream, infoBuffer, 0, infoBuffer.Length, async, cancellationToken).ConfigureAwait(false);
                 if (read == 0)
                     break;
                 if (read < infoBuffer.Length)
@@ -145,14 +146,14 @@ public class SaveFileSerializer : ISaveFileSerializer
                     throw new CorruptedSatisFactorySaveFileException("Corrupted chunk was read");
 
                 if (header.SaveVersion >= 41)
-                    await ReadExactlyAsync(stream, infoBuffer, 1, async).ConfigureAwait(false);
+                    await ReadExactlyAsync(stream, infoBuffer, 1, async, cancellationToken).ConfigureAwait(false);
 
-                await ReadExactlyAsync(stream, infoBuffer, infoBuffer.Length, async).ConfigureAwait(false);
+                await ReadExactlyAsync(stream, infoBuffer, infoBuffer.Length, async, cancellationToken).ConfigureAwait(false);
                 using var ms2 = new MemoryStream(infoBuffer, 0, infoBuffer.Length, false, true);
                 using var br2 = new BinaryReader(ms2);
                 var summary = _chunkSerializer.Deserialize(br2);  //16,20,24,28
 
-                await ReadExactlyAsync(stream, infoBuffer, infoBuffer.Length, async).ConfigureAwait(false);
+                await ReadExactlyAsync(stream, infoBuffer, infoBuffer.Length, async, cancellationToken).ConfigureAwait(false);
                 using var ms3 = new MemoryStream(infoBuffer, 0, infoBuffer.Length, false, true);
                 using var br3 = new BinaryReader(ms3);
                 var subChunk = _chunkSerializer.Deserialize(br3); //32,36,40,44
@@ -161,12 +162,12 @@ public class SaveFileSerializer : ISaveFileSerializer
                     throw new CorruptedSatisFactorySaveFileException("Corrupted sub chunk was read");
 
                 using var chunk = Manager.GetStream();
-                await CopyExactAsync(stream, chunk, summary.CompressedSize, async).ConfigureAwait(false);
+                await CopyExactAsync(stream, chunk, summary.CompressedSize, async, cancellationToken).ConfigureAwait(false);
                 chunk.Position = 0;
 
                 using (var zStream = new ZLibStream(chunk, CompressionMode.Decompress, true))
                 {
-                    await CopyToAsync(zStream, buffer, async).ConfigureAwait(false);
+                    await CopyToAsync(zStream, buffer, async, cancellationToken).ConfigureAwait(false);
                 }
 
                 uncompressedSize += summary.UncompressedSize;
@@ -207,7 +208,7 @@ public class SaveFileSerializer : ISaveFileSerializer
         };
     }
 
-    private async ValueTask SerializeInternal(SatisfactorySave save, Stream stream, bool async)
+    private async ValueTask SerializeInternal(SatisfactorySave save, Stream stream, bool async, CancellationToken cancellationToken)
     {
         using var writer = new BinaryWriter(stream, System.Text.Encoding.UTF8, true);
 
@@ -220,7 +221,7 @@ public class SaveFileSerializer : ISaveFileSerializer
             _bodySerializer.Serialize(writer, save.Header, save.Body);
             var meta = BuildMetadata(save);
             if (meta.Length > 0)
-                await WriteAsync(stream, meta, 0, meta.Length, async).ConfigureAwait(false);
+                await WriteAsync(stream, meta, 0, meta.Length, async, cancellationToken).ConfigureAwait(false);
             return;
         }
 
@@ -255,16 +256,16 @@ public class SaveFileSerializer : ISaveFileSerializer
             using var compressed = Manager.GetStream();
             using (var zStream = new ZLibStream(compressed, CompressionMode.Compress, true))
             {
-                await WriteAsync(zStream, chunkBuffer, 0, read, async).ConfigureAwait(false);
+                await WriteAsync(zStream, chunkBuffer, 0, read, async, cancellationToken).ConfigureAwait(false);
             }
 
             var compressedSize = (int)compressed.Length;
             compressed.Position = 0;
 
             var headerBytes = BuildChunkHeader(save.Header, compressedSize, read);
-            await WriteAsync(stream, headerBytes, 0, headerBytes.Length, async).ConfigureAwait(false);
+            await WriteAsync(stream, headerBytes, 0, headerBytes.Length, async, cancellationToken).ConfigureAwait(false);
 
-            await CopyToAsync(compressed, stream, async).ConfigureAwait(false);
+            await CopyToAsync(compressed, stream, async, cancellationToken).ConfigureAwait(false);
         }
     }
 
@@ -310,56 +311,56 @@ public class SaveFileSerializer : ISaveFileSerializer
         return ms.ToArray();
     }
 
-    private static ValueTask<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, bool async) =>
-        async ? stream.ReadAsync(buffer.AsMemory(offset, count)) : new ValueTask<int>(stream.Read(buffer, offset, count));
+    private static ValueTask<int> ReadAsync(Stream stream, byte[] buffer, int offset, int count, bool async, CancellationToken cancellationToken) =>
+        async ? stream.ReadAsync(buffer.AsMemory(offset, count), cancellationToken) : new ValueTask<int>(stream.Read(buffer, offset, count));
 
-    private static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, bool async)
+    private static ValueTask WriteAsync(Stream stream, byte[] buffer, int offset, int count, bool async, CancellationToken cancellationToken)
     {
         if (async)
-            return stream.WriteAsync(buffer.AsMemory(offset, count));
+            return stream.WriteAsync(buffer.AsMemory(offset, count), cancellationToken);
         stream.Write(buffer, offset, count);
         return ValueTask.CompletedTask;
     }
 
-    private static ValueTask CopyToAsync(Stream source, Stream destination, bool async)
+    private static ValueTask CopyToAsync(Stream source, Stream destination, bool async, CancellationToken cancellationToken)
     {
         if (async)
-            return new ValueTask(source.CopyToAsync(destination));
+            return new ValueTask(source.CopyToAsync(destination, cancellationToken));
         source.CopyTo(destination);
         return ValueTask.CompletedTask;
     }
 
-    private static async ValueTask ReadExactlyAsync(Stream stream, byte[] buffer, int count, bool async)
+    private static async ValueTask ReadExactlyAsync(Stream stream, byte[] buffer, int count, bool async, CancellationToken cancellationToken)
     {
         var offset = 0;
         while (offset < count)
         {
-            var read = await ReadAsync(stream, buffer, offset, count - offset, async).ConfigureAwait(false);
+            var read = await ReadAsync(stream, buffer, offset, count - offset, async, cancellationToken).ConfigureAwait(false);
             if (read == 0)
                 throw new EndOfStreamException();
             offset += read;
         }
     }
 
-    private static async ValueTask CopyExactAsync(Stream source, Stream destination, int count, bool async)
+    private static async ValueTask CopyExactAsync(Stream source, Stream destination, int count, bool async, CancellationToken cancellationToken)
     {
         var temp = new byte[81920];
         var remaining = count;
         while (remaining > 0)
         {
             var toRead = Math.Min(temp.Length, remaining);
-            var read = await ReadAsync(source, temp, 0, toRead, async).ConfigureAwait(false);
+            var read = await ReadAsync(source, temp, 0, toRead, async, cancellationToken).ConfigureAwait(false);
             if (read == 0)
                 throw new EndOfStreamException();
-            await WriteAsync(destination, temp, 0, read, async).ConfigureAwait(false);
+            await WriteAsync(destination, temp, 0, read, async, cancellationToken).ConfigureAwait(false);
             remaining -= read;
         }
     }
 
-    private static async ValueTask<byte[]> ReadRemainingAsync(Stream stream, int count, bool async)
+    private static async ValueTask<byte[]> ReadRemainingAsync(Stream stream, int count, bool async, CancellationToken cancellationToken)
     {
         var data = new byte[count];
-        await ReadExactlyAsync(stream, data, count, async).ConfigureAwait(false);
+        await ReadExactlyAsync(stream, data, count, async, cancellationToken).ConfigureAwait(false);
         return data;
     }
 
