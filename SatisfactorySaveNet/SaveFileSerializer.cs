@@ -35,6 +35,10 @@ public class SaveFileSerializer : ISaveFileSerializer
 
     public SaveFileSerializer(IHeaderSerializer headerSerializer, IChunkSerializer chunkSerializer, IBodySerializer bodySerializer)
     {
+        ArgumentNullException.ThrowIfNull(headerSerializer);
+        ArgumentNullException.ThrowIfNull(chunkSerializer);
+        ArgumentNullException.ThrowIfNull(bodySerializer);
+
         _headerSerializer = headerSerializer;
         _chunkSerializer = chunkSerializer;
         _bodySerializer = bodySerializer;
@@ -290,4 +294,43 @@ public class SaveFileSerializer : ISaveFileSerializer
         await SerializeAsync(save, stream).ConfigureAwait(false);
         return stream.ToArray();
     }
+
+    private static byte[] BuildMetadata(SatisfactorySave save)
+    {
+        if (string.IsNullOrEmpty(save.ModelVersion) && (save.DiscardedBytes == null || save.DiscardedBytes.Length == 0))
+            return Array.Empty<byte>();
+
+        using var stream = new MemoryStream();
+        using var writer = new BinaryWriter(stream);
+
+        writer.Write(save.ModelVersion ?? string.Empty);
+        if (save.DiscardedBytes == null)
+        {
+            writer.Write(0);
+        }
+        else
+        {
+            writer.Write(save.DiscardedBytes.Length);
+            writer.Write(save.DiscardedBytes);
+        }
+
+        return stream.ToArray();
+    }
+
+    private static (string? modelVersion, byte[]? discarded) ParseMetadata(byte[]? metadata)
+    {
+        if (metadata == null || metadata.Length == 0)
+            return (null, null);
+
+        using var stream = new MemoryStream(metadata);
+        using var reader = new BinaryReader(stream);
+
+        var version = reader.ReadString();
+        var length = reader.ReadInt32();
+        byte[]? discarded = length > 0 ? reader.ReadBytes(length) : null;
+
+        return (string.IsNullOrEmpty(version) ? null : version, discarded);
+    }
+
+    private static string GetAssemblyVersion() => typeof(SaveFileSerializer).Assembly.GetName().Version?.ToString() ?? string.Empty;
 }
