@@ -147,4 +147,25 @@ public class SaveSerializerTests
         result.ModelVersion.Should().Be(save.ModelVersion);
         result.DiscardedBytes.Should().BeEquivalentTo(save.DiscardedBytes);
     }
+
+    [Test]
+    public void Constructor_With_Null_HeaderSerializer_Throws()
+    {
+        Action act = () => new SaveFileSerializer(null!, ChunkSerializer.Instance, BodySerializer.Instance);
+        act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("headerSerializer");
+    }
+
+    [Test]
+    public void Constructor_With_Null_ChunkSerializer_Throws()
+    {
+        Action act = () => new SaveFileSerializer(HeaderSerializer.Instance, null!, BodySerializer.Instance);
+        act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("chunkSerializer");
+    }
+
+    [Test]
+    public void Constructor_With_Null_BodySerializer_Throws()
+    {
+        Action act = () => new SaveFileSerializer(HeaderSerializer.Instance, ChunkSerializer.Instance, null!);
+        act.Should().Throw<ArgumentNullException>().And.ParamName.Should().Be("bodySerializer");
+    }
 }
